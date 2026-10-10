@@ -9,11 +9,19 @@ import { validarImagen } from "@/shared/storage/reglasImagenes";
 import { subirImagen } from "@/shared/storage/subirImagen";
 import { esViolacionDeUnicidad, mensajeDeNegocio } from "@/shared/supabase/errores";
 import { createClient } from "@/shared/supabase/server";
+import type { ZonaCobertura } from "../domain/emprendimiento";
 import { datosEmprendimientoSchema } from "../domain/schemas";
 import { crearRepositorioEmprendimientos } from "../infrastructure/emprendimientoRepository";
 import { obtenerMiEmprendimiento } from "./miEmprendimiento";
 
 const ERROR_GUARDAR = "No pudimos guardar tu emprendimiento. Intenta de nuevo.";
+
+type FormularioValido = {
+  ok: true;
+  datos: { nombre: string; descripcion: string | null; zonas: ZonaCobertura[] };
+  logo: File | null;
+};
+type FormularioInvalido = { ok: false; estado: EstadoAccion };
 
 // El formulario manda un checkbox "zona" por cada zona marcada y un input "costo_<id>" por cada una
 function leerZonas(formData: FormData) {
@@ -24,19 +32,19 @@ function leerZonas(formData: FormData) {
 }
 
 // Valida el formulario completo (datos + logo) igual para crear y editar
-function leerFormulario(formData: FormData) {
+function leerFormulario(formData: FormData): FormularioValido | FormularioInvalido {
   const datos = datosEmprendimientoSchema.safeParse({
     nombre: texto(formData, "nombre"),
     descripcion: texto(formData, "descripcion"),
     zonas: leerZonas(formData),
   });
-  if (!datos.success) return { error: primerError(datos.error.issues) } as const;
+  if (!datos.success) return { ok: false, estado: primerError(datos.error.issues) };
 
   const logo = archivo(formData, "logo");
   const errorLogo = logo ? validarImagen(logo, "logos") : null;
-  if (errorLogo) return { error: { error: errorLogo } } as const;
+  if (errorLogo) return { ok: false, estado: { error: errorLogo } };
 
-  return { datos: datos.data, logo } as const;
+  return { ok: true, datos: datos.data, logo };
 }
 
 export async function crearEmprendimiento(
@@ -49,7 +57,7 @@ export async function crearEmprendimiento(
   }
 
   const formulario = leerFormulario(formData);
-  if ("error" in formulario) return formulario.error;
+  if (!formulario.ok) return formulario.estado;
 
   const supabase = await createClient();
   try {
@@ -73,7 +81,7 @@ export async function actualizarEmprendimiento(
   if (!usuario || !actual) return { error: "No encontramos tu emprendimiento" };
 
   const formulario = leerFormulario(formData);
-  if ("error" in formulario) return formulario.error;
+  if (!formulario.ok) return formulario.estado;
 
   const supabase = await createClient();
   try {
