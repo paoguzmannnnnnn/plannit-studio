@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { crearEvento } from "@/features/eventos/application/actions";
 import { MESES_MAXIMOS_HACIA_ADELANTE } from "@/features/eventos/domain/schemas";
-import { NuevoEventoForm } from "@/features/eventos/ui/NuevoEventoForm";
+import { EventoForm } from "@/features/eventos/ui/EventoForm";
 import { listarZonas } from "@/shared/catalogos";
 import { hoyLocal, sumarDias } from "@/shared/fechas";
 import { createClient } from "@/shared/supabase/server";
@@ -20,10 +21,12 @@ export default async function NuevoEventoPage() {
           Con la fecha y la zona te mostramos solo lo que de verdad llega a tiempo.
         </p>
       </div>
-      <NuevoEventoForm
+      <EventoForm
         zonas={zonas}
         fechaMinima={hoy}
         fechaMaxima={sumarDias(hoy, MESES_MAXIMOS_HACIA_ADELANTE * 31)}
+        accion={crearEvento}
+        textoBoton="Crear evento y ver opciones"
       />
     </div>
   );

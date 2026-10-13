@@ -1,14 +1,12 @@
-import { formatearMomento, tiempoRestante } from "@/shared/fechas";
+import Link from "next/link";
+import { formatearMomento, horasHasta, tiempoRestante } from "@/shared/fechas";
 import type { Evento } from "../domain/evento";
 
 const ICONO_CLASE = "size-1.5 shrink-0 rounded-full bg-sandia";
 
 export function ResumenEvento({ evento }: { evento: Evento }) {
-  const datos = [
-    formatearMomento(evento.fechaEntrega),
-    evento.zona.nombre,
-    evento.direccion,
-  ];
+  const datos = [formatearMomento(evento.fechaEntrega), evento.zona.nombre, evento.direccion];
+  const editable = horasHasta(evento.fechaEntrega) > 0;
 
   return (
     <section className="flex flex-col gap-3">
@@ -18,7 +16,19 @@ export function ResumenEvento({ evento }: { evento: Evento }) {
           {tiempoRestante(evento.fechaEntrega)}
         </span>
       </div>
-      <h1 className="font-display text-3xl font-black sm:text-4xl">{evento.nombre}</h1>
+
+      <div className="flex items-start justify-between gap-3">
+        <h1 className="font-display text-3xl font-black sm:text-4xl">{evento.nombre}</h1>
+        {editable && (
+          <Link
+            href={`/eventos/${evento.id}/editar`}
+            className="mt-1 shrink-0 rounded-full border border-borde bg-white px-4 py-2 text-sm font-bold transition hover:border-sandia"
+          >
+            Editar
+          </Link>
+        )}
+      </div>
+
       <ul className="flex flex-wrap gap-2">
         {datos.map((dato) => (
           <li

@@ -6,27 +6,29 @@ import { TIPOS_EVENTO } from "./evento";
 export const MESES_MAXIMOS_HACIA_ADELANTE = 12;
 const HORAS_MAXIMAS = MESES_MAXIMOS_HACIA_ADELANTE * 31 * 24;
 
-export const nuevoEventoSchema = z
+// Lo que siempre se puede cambiar
+export const datosBasicosEventoSchema = z.object({
+  nombre: z
+    .string()
+    .trim()
+    .min(2, "Ponle un nombre a tu evento")
+    .max(60, "El nombre puede tener máximo 60 caracteres"),
+  tipo: z.enum(TIPOS_EVENTO, { message: "Elige el tipo de evento" }),
+  direccion: z
+    .string()
+    .trim()
+    .min(5, "Escribe la dirección de entrega")
+    .max(200, "La dirección puede tener máximo 200 caracteres"),
+});
+
+// Lo que define la disponibilidad: solo se cambia si no hay pedidos vivos
+export const fechaYZonaSchema = z
   .object({
-    nombre: z
-      .string()
-      .trim()
-      .min(2, "Ponle un nombre a tu evento")
-      .max(60, "El nombre puede tener máximo 60 caracteres"),
-    tipo: z.enum(TIPOS_EVENTO, { message: "Elige el tipo de evento" }),
     fecha: z.string().refine(esFechaISO, "Elige la fecha de entrega"),
     hora: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Elige la hora de entrega"),
     zonaId: entero("Elige la zona del evento", 1, 32767),
-    direccion: z
-      .string()
-      .trim()
-      .min(5, "Escribe la dirección de entrega")
-      .max(200, "La dirección puede tener máximo 200 caracteres"),
   })
-  .transform(({ fecha, hora, ...resto }) => ({
-    ...resto,
-    fechaEntrega: momentoLocal(fecha, hora),
-  }))
+  .transform(({ fecha, hora, zonaId }) => ({ zonaId, fechaEntrega: momentoLocal(fecha, hora) }))
   .refine((datos) => horasHasta(datos.fechaEntrega) > 0, {
     message: "La entrega tiene que ser en el futuro",
   })

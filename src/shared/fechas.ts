@@ -13,6 +13,14 @@ const MS_POR_HORA = 60 * 60 * 1000;
 // "en-CA" formatea como YYYY-MM-DD
 const FORMATO_ISO_LOCAL = new Intl.DateTimeFormat("en-CA", { timeZone: ZONA_HORARIA });
 
+// "14:30" en 24 horas, para precargar inputs type="time"
+const FORMATO_HORA_24 = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+  timeZone: ZONA_HORARIA,
+});
+
 const FORMATO_LARGO = new Intl.DateTimeFormat("es-SV", {
   weekday: "long",
   day: "numeric",
@@ -35,7 +43,7 @@ const FORMATO_HORA = new Intl.DateTimeFormat("es-SV", {
 
 // Node y el navegador usan espacios distintos (normal, no-break, narrow no-break).
 // Se ven iguales pero React los ve diferentes y marca error de hidratación.
-const ESPACIOS_ESPECIALES = /[\u00a0\u202f]/g;
+const ESPACIOS_ESPECIALES = /[  ]/g;
 
 function formatear(formato: Intl.DateTimeFormat, fecha: Date): string {
   return formato.format(fecha).replace(ESPACIOS_ESPECIALES, " ");
@@ -63,6 +71,12 @@ export function sumarDias(fecha: FechaISO, dias: number): FechaISO {
 // "2026-10-14" + "14:30" -> "2026-10-14T14:30:00-06:00" (listo para timestamptz)
 export function momentoLocal(fecha: FechaISO, hora: string): string {
   return `${fecha}T${hora}:00${DESFASE_EL_SALVADOR}`;
+}
+
+// Lo contrario: timestamptz -> { fecha: "2026-10-14", hora: "14:30" } en hora de El Salvador
+export function partesLocales(momento: string): { fecha: FechaISO; hora: string } {
+  const fecha = new Date(momento);
+  return { fecha: FORMATO_ISO_LOCAL.format(fecha), hora: FORMATO_HORA_24.format(fecha) };
 }
 
 // "2026-10-14" -> "miércoles, 14 de octubre"

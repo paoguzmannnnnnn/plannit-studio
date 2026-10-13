@@ -1,6 +1,6 @@
 import type { Database } from "@/shared/supabase/database.types";
 import type { ClienteSupabase } from "@/shared/supabase/tipos";
-import type { Evento, EventoRepository } from "../domain/evento";
+import type { DatosEvento, Evento, EventoRepository } from "../domain/evento";
 
 type Tablas = Database["public"]["Tables"];
 
@@ -20,6 +20,16 @@ function aEvento(fila: FilaEvento): Evento {
     fechaEntrega: fila.fecha_entrega,
     direccion: fila.direccion,
     zona: fila.zonas,
+  };
+}
+
+function aColumnas(datos: DatosEvento) {
+  return {
+    nombre: datos.nombre,
+    tipo: datos.tipo,
+    fecha_entrega: datos.fechaEntrega,
+    zona_id: datos.zonaId,
+    direccion: datos.direccion,
   };
 }
 
@@ -50,19 +60,18 @@ export function crearRepositorioEventos(supabase: ClienteSupabase): EventoReposi
     async crear(clienteId, datos) {
       const { data, error } = await supabase
         .from("eventos")
-        .insert({
-          cliente_id: clienteId,
-          nombre: datos.nombre,
-          tipo: datos.tipo,
-          fecha_entrega: datos.fechaEntrega,
-          zona_id: datos.zonaId,
-          direccion: datos.direccion,
-        })
+        .insert({ ...aColumnas(datos), cliente_id: clienteId })
         .select("id")
         .single();
 
       if (error) throw error;
       return data.id;
+    },
+
+    // El trigger de la BD impide mover fecha o zona si hay pedidos vivos
+    async actualizar(eventoId, datos) {
+      const { error } = await supabase.from("eventos").update(aColumnas(datos)).eq("id", eventoId);
+      if (error) throw error;
     },
 
     // Toda la regla de disponibilidad vive en Postgres: aquí solo se llama

@@ -24,7 +24,8 @@ export type Evento = {
   direccion: string;
 };
 
-export type NuevoEvento = {
+// Lo que se guarda al crear o editar un evento
+export type DatosEvento = {
   nombre: string;
   tipo: TipoEvento;
   fechaEntrega: string;
@@ -55,6 +56,7 @@ export function separarPorFecha(eventos: readonly Evento[], ahora: number = Date
 export interface EventoRepository {
   listarDe(clienteId: string): Promise<Evento[]>;
   obtener(eventoId: string): Promise<Evento | null>;
-  crear(clienteId: string, datos: NuevoEvento): Promise<string>;
+  crear(clienteId: string, datos: DatosEvento): Promise<string>;
+  actualizar(eventoId: string, datos: DatosEvento): Promise<void>;
   productosDisponibles(eventoId: string, tipo: TipoProducto): Promise<ProductoDisponible[]>;
 }
