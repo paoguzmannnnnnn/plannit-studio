@@ -36,6 +36,13 @@ export type ProductoPublico = TarjetaProducto & {
   fotos: string[];
 };
 
+// Prueba social: cuántos eventos lo eligieron y cómo lo califican
+export type EstadisticasProducto = {
+  vecesElegido: number;
+  ratingPromedio: number;
+  totalResenas: number;
+};
+
 export type FiltroProductos = {
   categoriaId?: number;
   emprendimientoId?: string;
@@ -48,4 +55,5 @@ export interface ExplorarRepository {
   obtenerEmprendimiento(id: string): Promise<EmprendimientoPublico | null>;
   obtenerProducto(id: string): Promise<ProductoPublico | null>;
   hayEmprendimientosEnZona(zonaId: number): Promise<boolean>;
+  estadisticasProductos(): Promise<Map<string, EstadisticasProducto>>;
 }

@@ -6,7 +6,9 @@ import { armarCarrito, type Disponibilidad } from "@/features/carrito/domain/car
 import { crearRepositorioCarrito } from "@/features/carrito/infrastructure/carritoRepository";
 import { ConfirmarOrdenForm } from "@/features/carrito/ui/ConfirmarOrdenForm";
 import { GrupoCarrito } from "@/features/carrito/ui/GrupoCarrito";
+import { esPedidoVivo } from "@/features/eventos/domain/edicion";
 import { crearRepositorioEventos } from "@/features/eventos/infrastructure/eventoRepository";
+import { crearRepositorioPedidos } from "@/features/pedidos/infrastructure/pedidoRepository";
 import { formatearDolares } from "@/shared/dinero";
 import { formatearMomento, horasHasta } from "@/shared/fechas";
 import { createClient } from "@/shared/supabase/server";
@@ -28,11 +30,14 @@ export default async function CarritoEventoPage({ params }: Props) {
 
   const repositorio = crearRepositorioCarrito(supabase);
   const yaPaso = horasHasta(evento.fechaEntrega) <= 0;
-  const [items, disponibilidad] = await Promise.all([
+  const [items, disponibilidad, pedidos] = await Promise.all([
     repositorio.listarItems(evento.id),
     yaPaso ? Promise.resolve(new Map<string, Disponibilidad>()) : repositorio.disponibilidad(evento.id),
+    crearRepositorioPedidos(supabase).listarDeEvento(evento.id),
   ]);
-  const carrito = armarCarrito(items, disponibilidad);
+  // Emprendimientos que ya llevan algo a este evento: no se cobra envío otra vez
+  const envioCubierto = new Set(pedidos.filter(esPedidoVivo).map((pedido) => pedido.emprendimiento.id));
+  const carrito = armarCarrito(items, disponibilidad, envioCubierto);
 
   const hayPersonalizables = carrito.grupos.some((grupo) => grupo.requiereAceptacion);
 

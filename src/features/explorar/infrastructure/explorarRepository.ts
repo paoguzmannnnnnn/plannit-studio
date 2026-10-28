@@ -161,5 +161,22 @@ export function crearRepositorioExplorar(supabase: ClienteSupabase): ExplorarRep
       if (error) throw error;
       return (count ?? 0) > 0;
     },
+
+    // Totales calculados en Postgres: no expone pedidos ni reseñas de nadie
+    async estadisticasProductos() {
+      const { data, error } = await supabase.rpc("estadisticas_productos");
+      if (error) throw error;
+
+      return new Map(
+        data.map((fila) => [
+          fila.producto_id,
+          {
+            vecesElegido: fila.veces_elegido,
+            ratingPromedio: Number(fila.rating_promedio ?? 0),
+            totalResenas: fila.total_resenas,
+          },
+        ]),
+      );
+    },
   };
 }

@@ -22,7 +22,13 @@ export function GrupoCarrito({ grupo, eventoId }: { grupo: Grupo; eventoId: stri
       <dl className="flex flex-col gap-1 border-t border-borde py-3 text-sm">
         <div className="flex justify-between text-gris">
           <dt>Envío</dt>
-          <dd>{grupo.envioCentavos === 0 ? "Gratis" : formatearDolares(grupo.envioCentavos)}</dd>
+          <dd>
+            {grupo.envioCubierto
+              ? "Ya incluido en tu otro pedido"
+              : grupo.envioCentavos === 0
+                ? "Gratis"
+                : formatearDolares(grupo.envioCentavos)}
+          </dd>
         </div>
         <div className="flex justify-between font-bold">
           <dt>Total con {grupo.emprendimiento.nombre}</dt>

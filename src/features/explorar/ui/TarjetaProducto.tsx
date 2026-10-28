@@ -3,11 +3,12 @@ import Link from "next/link";
 import { ESTRATEGIAS_TIPO } from "@/features/catalogo/domain/tiposProducto";
 import { formatearDolares } from "@/shared/dinero";
 import { StickerFoto } from "@/shared/ui/StickerFoto";
-import type { TarjetaProducto as Tarjeta } from "../domain/vistas";
+import { Calificacion } from "@/shared/ui/Calificacion";
+import type { EstadisticasProducto, TarjetaProducto as Tarjeta } from "../domain/vistas";
 
-type Props = { producto: Tarjeta; mostrarEmprendimiento?: boolean };
+type Props = { producto: Tarjeta; mostrarEmprendimiento?: boolean; estadisticas?: EstadisticasProducto };
 
-export function TarjetaProducto({ producto, mostrarEmprendimiento = true }: Props) {
+export function TarjetaProducto({ producto, mostrarEmprendimiento = true, estadisticas }: Props) {
   const estrategia = ESTRATEGIAS_TIPO[producto.tipo];
 
   return (
@@ -32,6 +33,14 @@ export function TarjetaProducto({ producto, mostrarEmprendimiento = true }: Prop
         <p className="line-clamp-2 text-sm font-bold">{producto.nombre}</p>
         {mostrarEmprendimiento && (
           <p className="truncate text-xs text-gris">{producto.emprendimiento.nombre}</p>
+        )}
+        {estadisticas && (
+          <Calificacion promedio={estadisticas.ratingPromedio} total={estadisticas.totalResenas} />
+        )}
+        {estadisticas && estadisticas.vecesElegido > 1 && (
+          <p className="text-[11px] font-medium text-sandia">
+            Elegido para {estadisticas.vecesElegido} eventos
+          </p>
         )}
         <p className="mt-auto pt-2 text-sm font-bold">{formatearDolares(producto.precioCentavos)}</p>
       </div>

@@ -765,6 +765,15 @@ export type Database = {
         Returns: boolean
       }
       es_participante: { Args: { p_conversacion_id: string }; Returns: boolean }
+      estadisticas_productos: {
+        Args: never
+        Returns: {
+          producto_id: string
+          rating_promedio: number
+          total_resenas: number
+          veces_elegido: number
+        }[]
+      }
       estados_que_ocupan: {
         Args: never
         Returns: Database["public"]["Enums"]["estado_pedido"][]

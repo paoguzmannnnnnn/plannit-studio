@@ -59,6 +59,8 @@ export type GrupoCarrito = {
   lineas: LineaCarrito[];
   subtotalCentavos: number;
   envioCentavos: number;
+  /** Ya hay un pedido vivo con este emprendimiento para el evento: el envío no se cobra otra vez */
+  envioCubierto: boolean;
   requiereAceptacion: boolean;
 };
 
@@ -98,10 +100,12 @@ function tieneProducto(item: ItemCarrito): item is ItemCarrito & { producto: Pro
   return item.producto !== null;
 }
 
-// Lógica pura: arma grupos por emprendimiento, totales y qué impide confirmar
+// Lógica pura: arma grupos por emprendimiento, totales y qué impide confirmar.
+// envioCubierto: emprendimientos que ya llevan algo a este evento (no se cobra envío otra vez).
 export function armarCarrito(
   items: readonly ItemCarrito[],
   disponibilidad: ReadonlyMap<string, Disponibilidad>,
+  envioCubierto: ReadonlySet<string> = new Set(),
 ): Carrito {
   const sinProducto = items.filter((item) => !tieneProducto(item));
 
@@ -127,19 +131,25 @@ export function armarCarrito(
     porEmprendimiento.set(id, [...(porEmprendimiento.get(id) ?? []), linea]);
   }
 
-  const grupos: GrupoCarrito[] = [...porEmprendimiento.values()].map((lineasGrupo) => ({
-    emprendimiento: lineasGrupo[0].producto.emprendimiento,
+  const grupos: GrupoCarrito[] = [...porEmprendimiento.values()].map((lineasGrupo) => {
+    const emprendimiento = lineasGrupo[0].producto.emprendimiento;
+    const cubierto = envioCubierto.has(emprendimiento.id);
+    return {
+    emprendimiento,
     lineas: lineasGrupo,
     subtotalCentavos: sumar(lineasGrupo.map((linea) => linea.totalCentavos)),
-    // El envío se cobra una vez por emprendimiento
-    envioCentavos:
-      lineasGrupo
-        .map((linea) => disponibilidad.get(linea.productoId)?.costoEnvioCentavos)
-        .find((costo) => costo !== undefined) ?? 0,
+    // El envío se cobra una vez por emprendimiento y por evento
+    envioCubierto: cubierto,
+    envioCentavos: cubierto
+      ? 0
+      : (lineasGrupo
+          .map((linea) => disponibilidad.get(linea.productoId)?.costoEnvioCentavos)
+          .find((costo) => costo !== undefined) ?? 0),
     requiereAceptacion: lineasGrupo.some(
       (linea) => ESTRATEGIAS_TIPO[linea.producto.tipo].requiereAceptacion,
     ),
-  }));
+    };
+  });
 
   const subtotalCentavos = sumar(grupos.map((grupo) => grupo.subtotalCentavos));
   const envioCentavos = sumar(grupos.map((grupo) => grupo.envioCentavos));
