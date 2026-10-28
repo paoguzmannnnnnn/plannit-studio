@@ -9,15 +9,15 @@ import { accionesPara } from "@/features/pedidos/domain/acciones";
 import { etapaDe } from "@/features/pedidos/domain/pedido";
 import { crearRepositorioPedidos } from "@/features/pedidos/infrastructure/pedidoRepository";
 import { AvisoPedido } from "@/features/pedidos/ui/AvisoPedido";
-import { FilaPedido } from "@/features/pedidos/ui/FilaPedido";
-import { formatearDolares } from "@/shared/dinero";
+import { cargarPlan } from "@/features/plan/application/cargarPlan";
+import { PlanEvento } from "@/features/plan/ui/PlanEvento";
 import { horasHasta } from "@/shared/fechas";
 import { createClient } from "@/shared/supabase/server";
 import { esUuid } from "@/shared/validaciones";
 
 type Props = { params: Promise<{ id: string }> };
 
-// El evento como centro de control: lo pendiente, lo que ya tengo y el acceso a agregar más
+// El evento es el plan: lo pendiente arriba, lo que ya tienes con fotos y lo que te falta con su fecha límite
 export default async function EventoPage({ params }: Props) {
   const { id } = await params;
   if (!esUuid(id)) notFound();
@@ -37,10 +37,8 @@ export default async function EventoPage({ params }: Props) {
     yaPaso ? Promise.resolve<ItemCarrito[]>([]) : crearRepositorioCarrito(supabase).listarItems(evento.id),
   ]);
 
+  const plan = await cargarPlan({ supabase, evento, pedidos, itemsCarrito, yaPaso });
   const pendientes = pedidos.filter((pedido) => etapaDe(pedido, "cliente", transiciones) === "por_atender");
-  const enCarrito = itemsCarrito.reduce((total, item) => total + item.cantidad, 0);
-  const sinNada = pedidos.length === 0 && enCarrito === 0;
-  const rutaAgregar = `/eventos/${evento.id}/agregar`;
 
   return (
     <>
@@ -64,71 +62,19 @@ export default async function EventoPage({ params }: Props) {
         </section>
       )}
 
-      {sinNada ? (
-        <section className="flex flex-col items-center gap-3 rounded-card border border-dashed border-borde bg-white px-6 py-12 text-center">
-          <p className="font-display text-2xl font-black">Todavía no eliges tu decoración</p>
-          {yaPaso ? (
-            <p className="text-sm text-gris">Este evento ya pasó.</p>
-          ) : (
-            <>
-              <p className="max-w-sm text-sm text-gris">
-                Te mostramos solo lo que llega a tiempo para tu fecha y tu zona.
-              </p>
-              <Link
-                href={rutaAgregar}
-                className="mt-2 flex h-12 items-center rounded-full bg-sandia px-6 text-sm font-bold text-white transition hover:brightness-95"
-              >
-                Elegir decoración
-              </Link>
-            </>
-          )}
-        </section>
-      ) : (
-        <section className="flex flex-col gap-3">
-          <h2 className="font-display text-2xl font-black">Tu decoración</h2>
+      {yaPaso && <p className="rounded-card bg-rosa p-4 text-sm">Este evento ya pasó. Así quedó tu plan:</p>}
 
-          <ul className="flex flex-col gap-3">
-            {pedidos.map((pedido) => (
-              <li key={pedido.id}>
-                <FilaPedido
-                  pedido={pedido}
-                  rol="cliente"
-                  href={`/pedidos/${pedido.ordenId}`}
-                  mostrarEvento={false}
-                />
-              </li>
-            ))}
+      <PlanEvento
+        plan={plan}
+        eventoId={evento.id}
+        editable={!yaPaso}
+        subtotalSinApartar={subtotalDeItems(itemsCarrito)}
+      />
 
-            {enCarrito > 0 && (
-              <li>
-                <Link
-                  href={`/eventos/${evento.id}/carrito`}
-                  className="flex items-center justify-between gap-4 rounded-card border border-dashed border-sandia bg-white p-4 transition hover:bg-rosa"
-                >
-                  <div>
-                    <p className="font-bold">En tu carrito</p>
-                    <p className="text-xs text-gris">
-                      {enCarrito} {enCarrito === 1 ? "producto" : "productos"} sin confirmar ·{" "}
-                      {formatearDolares(subtotalDeItems(itemsCarrito))}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-sm font-bold text-sandia">Confirmar ›</span>
-                </Link>
-              </li>
-            )}
-          </ul>
-
-          {yaPaso ? (
-            <p className="text-sm text-gris">Este evento ya pasó.</p>
-          ) : (
-            <Link
-              href={rutaAgregar}
-              className="flex h-12 items-center justify-center rounded-full border border-borde bg-white text-sm font-bold transition hover:border-sandia"
-            >
-              + Agregar decoración
-            </Link>
-          )}
-        </section>
+      {pedidos.length > 0 && (
+        <Link href="/pedidos" className="self-center text-sm font-bold text-sandia">
+          Ver pagos y detalle de pedidos ›
+        </Link>
       )}
     </>
   );

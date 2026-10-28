@@ -6,17 +6,20 @@ type Props = {
   rutaBase: string;
   activa: TipoProducto;
   conteos: Record<TipoProducto, number>;
+  /** Parámetros que se conservan al cambiar de pestaña (por ejemplo, la sección del plan) */
+  parametros?: Record<string, string>;
 };
 
-export function PestanasDisponibilidad({ rutaBase, activa, conteos }: Props) {
+export function PestanasDisponibilidad({ rutaBase, activa, conteos, parametros = {} }: Props) {
   return (
     <nav className="flex gap-6 border-b border-borde text-sm" aria-label="Tipo de producto">
       {TIPOS_PRODUCTO.map((tipo) => {
         const esActiva = tipo === activa;
+        const consulta = new URLSearchParams({ ...parametros, tab: tipo });
         return (
           <Link
             key={tipo}
-            href={`${rutaBase}?tab=${tipo}`}
+            href={`${rutaBase}?${consulta.toString()}`}
             scroll={false}
             aria-current={esActiva ? "page" : undefined}
             className={`-mb-px flex items-center gap-1.5 border-b-[3px] pb-2.5 transition ${

@@ -22,6 +22,8 @@ export type Evento = {
   fechaEntrega: string; // timestamptz: fecha + hora en que la decoración debe estar lista
   zona: { id: number; nombre: string };
   direccion: string;
+  /** Secciones del plan que el cliente marcó como "no lo necesito" */
+  seccionesOmitidas: string[];
 };
 
 // Lo que se guarda al crear o editar un evento

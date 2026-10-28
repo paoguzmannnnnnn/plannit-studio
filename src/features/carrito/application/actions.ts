@@ -99,7 +99,7 @@ export async function agregarAlCarrito(
   const restantes = disponible.disponibles - cantidadEnCarrito(items, productoId);
   if (cantidad.data > restantes) {
     return {
-      error: restantes > 0 ? `Solo quedan ${restantes} para tu fecha` : "Ya tienes en tu carrito todo lo disponible",
+      error: restantes > 0 ? `Solo quedan ${restantes} para tu fecha` : "Ya tienes en tu plan todo lo disponible",
     };
   }
 
@@ -120,7 +120,7 @@ export async function agregarAlCarrito(
 
   revalidarCarrito(eventoId);
   revalidatePath(`/productos/${productoId}`);
-  return { mensaje: "Agregado a tu carrito" };
+  return { mensaje: "Listo, ya está en tu plan" };
 }
 
 export async function cambiarCantidad(eventoId: string, itemId: string, cantidad: number): Promise<void> {

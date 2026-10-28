@@ -1,5 +1,6 @@
 import type { Rol } from "@/features/auth/domain/roles";
 import type { Database } from "@/shared/supabase/database.types";
+import type { TonoEtiqueta } from "@/shared/ui/Etiqueta";
 
 export type EstadoPedido = Database["public"]["Enums"]["estado_pedido"];
 
@@ -59,9 +60,9 @@ export const PRESENTACION_ESTADO: Record<Rol, Record<EstadoPedido, Presentacion>
   },
 };
 
-export const CLASE_TONO: Record<Tono, string> = {
-  pendiente: "bg-confeti/30 text-tinta",
-  accion: "bg-sandia text-white",
-  ok: "bg-rosa text-sandia",
-  cerrado: "bg-borde text-gris",
+export const TONO_ETIQUETA: Record<Tono, TonoEtiqueta> = {
+  pendiente: "espera",
+  accion: "sandia",
+  ok: "suave",
+  cerrado: "neutro",
 };

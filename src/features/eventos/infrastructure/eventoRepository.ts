@@ -6,10 +6,11 @@ type Tablas = Database["public"]["Tables"];
 
 type FilaEvento = Pick<
   Tablas["eventos"]["Row"],
-  "id" | "cliente_id" | "nombre" | "tipo" | "fecha_entrega" | "direccion"
+  "id" | "cliente_id" | "nombre" | "tipo" | "fecha_entrega" | "direccion" | "secciones_omitidas"
 > & { zonas: Pick<Tablas["zonas"]["Row"], "id" | "nombre"> };
 
-const SELECT_EVENTO = "id, cliente_id, nombre, tipo, fecha_entrega, direccion, zonas(id, nombre)";
+const SELECT_EVENTO =
+  "id, cliente_id, nombre, tipo, fecha_entrega, direccion, secciones_omitidas, zonas(id, nombre)";
 
 function aEvento(fila: FilaEvento): Evento {
   return {
@@ -20,6 +21,7 @@ function aEvento(fila: FilaEvento): Evento {
     fechaEntrega: fila.fecha_entrega,
     direccion: fila.direccion,
     zona: fila.zonas,
+    seccionesOmitidas: fila.secciones_omitidas,
   };
 }
 

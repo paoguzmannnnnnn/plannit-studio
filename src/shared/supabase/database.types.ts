@@ -195,6 +195,7 @@ export type Database = {
           fecha_entrega: string
           id: string
           nombre: string
+          secciones_omitidas: string[]
           tipo: string
           zona_id: number
         }
@@ -205,6 +206,7 @@ export type Database = {
           fecha_entrega: string
           id?: string
           nombre: string
+          secciones_omitidas?: string[]
           tipo: string
           zona_id: number
         }
@@ -215,6 +217,7 @@ export type Database = {
           fecha_entrega?: string
           id?: string
           nombre?: string
+          secciones_omitidas?: string[]
           tipo?: string
           zona_id?: number
         }
@@ -726,6 +729,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      cliente_tiene_pedido_con: {
+        Args: { p_cliente_id: string; p_emprendimiento_id: string }
+        Returns: boolean
+      }
       crear_emprendimiento: {
         Args: {
           p_descripcion?: string
@@ -747,6 +754,10 @@ export type Database = {
       }
       emprendedor_tiene_evento: {
         Args: { p_evento_id: string }
+        Returns: boolean
+      }
+      emprendedor_tiene_orden: {
+        Args: { p_orden_id: string }
         Returns: boolean
       }
       es_dueno_emprendimiento: {

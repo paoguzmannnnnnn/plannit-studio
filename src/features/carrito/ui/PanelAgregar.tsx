@@ -30,7 +30,7 @@ export async function PanelAgregar({ producto, eventoId }: { producto: ProductoP
     carrito.listarItems(evento.id),
   ]);
 
-  const hrefCarrito = `/eventos/${evento.id}/carrito`;
+  const hrefPlan = `/eventos/${evento.id}`;
   const disponible = disponibilidad.get(producto.id);
 
   if (!disponible) {
@@ -46,9 +46,9 @@ export async function PanelAgregar({ producto, eventoId }: { producto: ProductoP
   if (maximo <= 0) {
     return (
       <Aviso>
-        <p className="font-bold">Ya tienes en tu carrito todo lo disponible para tu fecha.</p>
-        <Link href={hrefCarrito} className="mt-2 inline-block font-bold text-sandia">
-          Ver carrito ›
+        <p className="font-bold">Ya tienes en tu plan todo lo disponible para tu fecha.</p>
+        <Link href={hrefPlan} className="mt-2 inline-block font-bold text-sandia">
+          Ver mi plan ›
         </Link>
       </Aviso>
     );
@@ -63,7 +63,7 @@ export async function PanelAgregar({ producto, eventoId }: { producto: ProductoP
   return (
     <section className="flex flex-col gap-4 rounded-card border border-borde bg-white p-4">
       <div>
-        <p className="font-bold">Agregar a {evento.nombre}</p>
+        <p className="font-bold">Agregar al plan de {evento.nombre}</p>
         <p className="text-xs text-gris">
           {formatearMomento(evento.fechaEntrega)} · {envio}
         </p>
@@ -77,7 +77,7 @@ export async function PanelAgregar({ producto, eventoId }: { producto: ProductoP
         accion={agregarAlCarrito.bind(null, evento.id, producto.id)}
         maximo={maximo}
         precioCentavos={producto.precioCentavos}
-        hrefCarrito={hrefCarrito}
+        hrefPlan={hrefPlan}
         opciones={{
           colores: producto.permiteColores,
           texto: producto.permiteTexto,

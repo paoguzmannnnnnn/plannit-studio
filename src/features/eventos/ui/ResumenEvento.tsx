@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatearMomento, horasHasta, tiempoRestante } from "@/shared/fechas";
+import { Etiqueta } from "@/shared/ui/Etiqueta";
 import type { Evento } from "../domain/evento";
 
 const ICONO_CLASE = "size-1.5 shrink-0 rounded-full bg-sandia";
@@ -12,9 +13,7 @@ export function ResumenEvento({ evento }: { evento: Evento }) {
     <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-gris">{evento.tipo}</span>
-        <span className="-rotate-2 rounded-full bg-rosa px-2.5 py-1 text-[11px] font-bold text-sandia">
-          {tiempoRestante(evento.fechaEntrega)}
-        </span>
+        <Etiqueta tono="suave">{tiempoRestante(evento.fechaEntrega)}</Etiqueta>
       </div>
 
       <div className="flex items-start justify-between gap-3">

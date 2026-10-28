@@ -21,13 +21,13 @@ type Props = {
   maximo: number;
   precioCentavos: number;
   opciones: OpcionesPersonalizacion;
-  hrefCarrito: string;
+  hrefPlan: string;
 };
 
 const claseStepper =
   "flex size-10 items-center justify-center rounded-full border border-borde bg-white text-lg transition hover:border-sandia disabled:opacity-40";
 
-export function AgregarAlCarritoForm({ accion, maximo, precioCentavos, opciones, hrefCarrito }: Props) {
+export function AgregarAlCarritoForm({ accion, maximo, precioCentavos, opciones, hrefPlan }: Props) {
   const [estado, ejecutar, pendiente] = useActionState(accion, ESTADO_INICIAL);
   const [cantidadElegida, setCantidad] = useState(1);
   // Si después de agregar quedan menos disponibles, la cantidad se ajusta sola
@@ -94,14 +94,14 @@ export function AgregarAlCarritoForm({ accion, maximo, precioCentavos, opciones,
       {estado.mensaje && (
         <p role="status" className="flex items-center justify-between gap-3 rounded-card bg-rosa p-3 text-sm">
           <span className="font-medium">{estado.mensaje}</span>
-          <Link href={hrefCarrito} className="font-bold text-sandia">
-            Ver carrito ›
+          <Link href={hrefPlan} className="font-bold text-sandia">
+            Ver mi plan ›
           </Link>
         </p>
       )}
 
       <Button type="submit" disabled={pendiente}>
-        {pendiente ? "Agregando…" : `Agregar · ${formatearDolares(precioCentavos * cantidad)}`}
+        {pendiente ? "Agregando…" : `Agregar a mi plan · ${formatearDolares(precioCentavos * cantidad)}`}
       </Button>
     </form>
   );

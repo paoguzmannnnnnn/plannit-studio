@@ -39,11 +39,11 @@ export default async function CarritoEventoPage({ params }: Props) {
   return (
     <>
       <Link href={`/eventos/${evento.id}`} className="text-sm text-gris transition hover:text-tinta">
-        ‹ {evento.nombre}
+        ‹ Plan de {evento.nombre}
       </Link>
 
       <div>
-        <h1 className="font-display text-3xl font-black">Tu carrito</h1>
+        <h1 className="font-display text-3xl font-black">Revisa y aparta</h1>
         <p className="text-sm text-gris">
           {evento.nombre} · {formatearMomento(evento.fechaEntrega)} · {evento.zona.nombre}
         </p>
@@ -51,9 +51,9 @@ export default async function CarritoEventoPage({ params }: Props) {
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-card border border-dashed border-borde bg-white px-6 py-12 text-center">
-          <p className="font-display text-xl font-black">Todavía no hay nada aquí</p>
+          <p className="font-display text-xl font-black">No tienes nada sin apartar</p>
           <Link href={`/eventos/${evento.id}`} className="text-sm font-bold text-sandia">
-            Ver lo que llega a tiempo ›
+            Volver a mi plan ›
           </Link>
         </div>
       ) : (
@@ -101,7 +101,7 @@ export default async function CarritoEventoPage({ params }: Props) {
             </dl>
 
             <p className="text-xs text-gris">
-              Al confirmar apartamos tu fecha con cada emprendedor.
+              Al apartar le avisamos a cada emprendedor y te guardan tu fecha.
               {hayPersonalizables
                 ? " Los pedidos a la medida se pagan cuando el emprendedor los acepte; los inmediatos, en seguida."
                 : " Después tienes 30 minutos para pagar."}
@@ -110,10 +110,10 @@ export default async function CarritoEventoPage({ params }: Props) {
             <ConfirmarOrdenForm
               accion={confirmarOrden.bind(null, evento.id)}
               habilitado={carrito.puedeConfirmar}
-              texto="Confirmar orden"
+              texto="Apartar con los emprendedores"
             />
             {!carrito.puedeConfirmar && !yaPaso && (
-              <p className="text-xs text-sandia">Revisa los avisos de tu carrito para poder confirmar.</p>
+              <p className="text-xs text-sandia">Revisa los avisos de arriba para poder apartar.</p>
             )}
           </aside>
         </div>

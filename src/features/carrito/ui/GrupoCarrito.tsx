@@ -1,4 +1,5 @@
 import { formatearDolares } from "@/shared/dinero";
+import { Etiqueta } from "@/shared/ui/Etiqueta";
 import type { GrupoCarrito as Grupo } from "../domain/carrito";
 import { LineaCarrito } from "./LineaCarrito";
 
@@ -8,9 +9,7 @@ export function GrupoCarrito({ grupo, eventoId }: { grupo: Grupo; eventoId: stri
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-bold">{grupo.emprendimiento.nombre}</h2>
         {grupo.requiereAceptacion && (
-          <span className="-rotate-2 rounded-full bg-rosa px-2.5 py-0.5 text-[11px] font-bold text-sandia">
-            Espera su confirmación
-          </span>
+          <Etiqueta tono="espera">Espera su confirmación</Etiqueta>
         )}
       </header>
 
