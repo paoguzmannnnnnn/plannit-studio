@@ -14,7 +14,7 @@ export function TarjetaProducto({ producto, mostrarEmprendimiento = true, estadi
   return (
     <Link
       href={`/productos/${producto.id}`}
-      className="group flex flex-col overflow-hidden rounded-card border border-borde bg-white transition hover:border-sandia"
+      className="group flex w-full flex-col overflow-hidden rounded-card border border-borde bg-white transition hover:border-sandia"
     >
       <div className="relative aspect-[4/3] bg-rosa">
         {producto.portadaUrl && (
