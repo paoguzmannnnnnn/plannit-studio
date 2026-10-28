@@ -31,6 +31,12 @@ body {
   color: var(--color-tinta);
 }
 
+/* Grandstander solo se carga en itálica: hay que pedirla así para que
+   Safari (iPhone) la use en lugar de poner su fuente por defecto */
+.font-display {
+  font-style: italic;
+}
+
 /* Safari en iPhone: los inputs de fecha/hora traen su propio ancho mínimo y se salen del contenedor */
 input[type="date"],
 input[type="time"] {
