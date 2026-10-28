@@ -8,7 +8,7 @@ type CategoriaDeProducto = { nombre: string } | null;
 export interface PlanRepository {
   itemsDePedidos(pedidoIds: readonly string[]): Promise<ItemDePedido[]>;
   infoProductos(productoIds: readonly string[]): Promise<Map<string, InfoProducto>>;
-  guardarOmitidas(eventoId: string, secciones: readonly string[]): Promise<void>;
+  guardarCubiertas(eventoId: string, secciones: readonly string[]): Promise<void>;
 }
 
 export function crearRepositorioPlan(supabase: ClienteSupabase): PlanRepository {
@@ -54,7 +54,7 @@ export function crearRepositorioPlan(supabase: ClienteSupabase): PlanRepository 
       );
     },
 
-    async guardarOmitidas(eventoId, secciones) {
+    async guardarCubiertas(eventoId, secciones) {
       const { error } = await supabase
         .from("eventos")
         .update({ secciones_omitidas: [...secciones] })

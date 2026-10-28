@@ -28,16 +28,17 @@ export function esIdSeccion(valor: unknown): valor is IdSeccion {
   return typeof valor === "string" && (IDS as string[]).includes(valor);
 }
 
-// Plan sugerido por tipo de evento, en el orden en que conviene decidir
+// Plan sugerido por tipo de evento, en orden de importancia:
+// primero las mesas (la base), luego la decoración principal y al final los detalles
 const PLANTILLAS: Record<TipoEvento, readonly IdSeccion[]> = {
-  Cumpleaños: ["backdrop", "globos", "mesas", "mesa_dulce", "letrero"],
-  "Baby shower": ["backdrop", "globos", "mesas", "mesa_dulce", "letrero"],
-  Boda: ["flores", "mesas", "backdrop", "letrero", "mesa_dulce"],
-  Graduación: ["backdrop", "globos", "mesas", "letrero"],
-  "Bautizo o primera comunión": ["flores", "globos", "mesas", "mesa_dulce"],
-  "Fiesta privada": ["backdrop", "globos", "mesas", "letrero"],
-  "Evento corporativo": ["backdrop", "letrero", "mesas", "flores"],
-  Otro: ["backdrop", "globos", "mesas", "mesa_dulce", "letrero", "flores"],
+  Cumpleaños: ["mesas", "backdrop", "globos", "mesa_dulce", "letrero"],
+  "Baby shower": ["mesas", "backdrop", "globos", "mesa_dulce", "letrero"],
+  Boda: ["mesas", "flores", "backdrop", "mesa_dulce", "letrero"],
+  Graduación: ["mesas", "backdrop", "globos", "letrero"],
+  "Bautizo o primera comunión": ["mesas", "flores", "globos", "mesa_dulce"],
+  "Fiesta privada": ["mesas", "backdrop", "globos", "letrero"],
+  "Evento corporativo": ["mesas", "backdrop", "flores", "letrero"],
+  Otro: ["mesas", "backdrop", "globos", "flores", "mesa_dulce", "letrero"],
 };
 
 function esTipoEvento(tipo: string): tipo is TipoEvento {

@@ -33,7 +33,7 @@ export async function cargarPlan({ supabase, evento, pedidos, itemsCarrito, yaPa
     eventoId: evento.id,
     tipoEvento: evento.tipo,
     fechaEntrega: evento.fechaEntrega,
-    omitidas: evento.seccionesOmitidas,
+    cubiertas: evento.seccionesCubiertas,
     pedidos,
     itemsPedido,
     itemsCarrito,

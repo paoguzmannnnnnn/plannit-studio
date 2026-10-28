@@ -10,7 +10,7 @@ export function ProgresoPlan({ plan, editable }: { plan: Plan; editable: boolean
       <div className="flex items-baseline justify-between gap-3">
         <p className="font-bold">{completo ? "¡Tu plan está completo!" : `Tu plan va al ${plan.porcentaje}%`}</p>
         <span className="shrink-0 text-xs text-gris">
-          {plan.elegidas} de {plan.total} listas
+          {plan.listas} de {plan.total} pasos listos
         </span>
       </div>
 
@@ -35,7 +35,8 @@ export function ProgresoPlan({ plan, editable }: { plan: Plan; editable: boolean
         <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-fondo px-3 py-2 text-xs">
           <Etiqueta tono={esUrgente(plan.proxima.limite) ? "sandia" : "espera"}>Lo próximo</Etiqueta>
           <span>
-            <span className="font-bold">{plan.proxima.seccion.nombre}:</span> {textoLimite(plan.proxima.limite).toLowerCase()}
+            <span className="font-bold">{plan.proxima.seccion.nombre}:</span>{" "}
+            {textoLimite(plan.proxima.limite).toLowerCase()}
           </span>
         </div>
       )}

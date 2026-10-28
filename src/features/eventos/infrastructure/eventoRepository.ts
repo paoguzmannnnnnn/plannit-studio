@@ -21,7 +21,8 @@ function aEvento(fila: FilaEvento): Evento {
     fechaEntrega: fila.fecha_entrega,
     direccion: fila.direccion,
     zona: fila.zonas,
-    seccionesOmitidas: fila.secciones_omitidas,
+    // La columna conserva su nombre original: guarda los pasos marcados como "Ya lo tengo"
+    seccionesCubiertas: fila.secciones_omitidas,
   };
 }
 

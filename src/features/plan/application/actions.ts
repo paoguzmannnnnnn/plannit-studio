@@ -8,8 +8,8 @@ import { createClient } from "@/shared/supabase/server";
 import { esIdSeccion } from "../domain/secciones";
 import { crearRepositorioPlan } from "../infrastructure/planRepository";
 
-// "No lo necesito" / "Deshacer" sobre una sección del plan
-export async function cambiarSeccion(eventoId: string, seccion: string, omitir: boolean): Promise<void> {
+// "Ya lo tengo" / "Mejor lo elijo aquí" sobre un paso del plan
+export async function marcarCubierta(eventoId: string, seccion: string, cubierta: boolean): Promise<void> {
   if (!esIdSeccion(seccion)) return;
 
   const usuario = await obtenerUsuarioActual();
@@ -19,10 +19,10 @@ export async function cambiarSeccion(eventoId: string, seccion: string, omitir: 
   const evento = await crearRepositorioEventos(supabase).obtener(eventoId);
   if (!evento || evento.clienteId !== usuario.id || horasHasta(evento.fechaEntrega) <= 0) return;
 
-  const omitidas = new Set(evento.seccionesOmitidas);
-  if (omitir) omitidas.add(seccion);
-  else omitidas.delete(seccion);
+  const cubiertas = new Set(evento.seccionesCubiertas);
+  if (cubierta) cubiertas.add(seccion);
+  else cubiertas.delete(seccion);
 
-  await crearRepositorioPlan(supabase).guardarOmitidas(evento.id, [...omitidas]);
+  await crearRepositorioPlan(supabase).guardarCubiertas(evento.id, [...cubiertas]);
   revalidatePath(`/eventos/${evento.id}`);
 }

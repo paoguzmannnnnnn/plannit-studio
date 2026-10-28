@@ -6,8 +6,8 @@ import { perteneceA, plantillaDe, SECCIONES, type IdSeccion } from "./secciones"
 
 // ---------------------------------------------------------------------
 // El plan del evento: lógica pura. Junta pedidos y carrito, los acomoda
-// en las secciones del tipo de evento, calcula el progreso y, para lo
-// que falta, hasta cuándo se puede elegir (según la anticipación real
+// en los pasos del tipo de evento (en orden), calcula el progreso y,
+// para lo que falta, hasta cuándo se puede elegir (según la anticipación real
 // de los productos que hay para esa fecha y zona).
 // ---------------------------------------------------------------------
 
@@ -36,15 +36,16 @@ export type SeccionDelPlan = {
   nombre: string;
   detalle: string;
   elementos: ElementoPlan[];
-  omitida: boolean;
+  /** El cliente lo resuelve por su cuenta ("Ya lo tengo"): cuenta como listo */
+  cubierta: boolean;
   limite: Limite;
 };
 
 export type Plan = {
   secciones: SeccionDelPlan[];
-  /** Lo elegido que no cae en ninguna sección de este tipo de evento */
+  /** Lo elegido que no cae en ningún paso de este tipo de evento */
   extras: ElementoPlan[];
-  elegidas: number;
+  listas: number;
   total: number;
   porcentaje: number;
   pendientes: SeccionDelPlan[];
@@ -66,7 +67,7 @@ export type EntradaPlan = {
   eventoId: string;
   tipoEvento: string;
   fechaEntrega: string;
-  omitidas: readonly string[];
+  cubiertas: readonly string[];
   pedidos: readonly Pick<Pedido, "id" | "ordenId" | "estado" | "expiraAt">[];
   itemsPedido: readonly ItemDePedido[];
   itemsCarrito: readonly ItemCarrito[];
@@ -153,7 +154,7 @@ function tieneFecha(limite: Limite): limite is LimiteConFecha {
 
 export function armarPlan(entrada: EntradaPlan): Plan {
   const plantilla = plantillaDe(entrada.tipoEvento);
-  const omitidas = new Set(entrada.omitidas);
+  const cubiertas = new Set(entrada.cubiertas);
   const elementos = [...elementosDePedidos(entrada), ...elementosDelCarrito(entrada)];
   const categoriaDe = (elemento: ElementoPlan) => entrada.info.get(elemento.productoId)?.categoria;
 
@@ -162,7 +163,7 @@ export function armarPlan(entrada: EntradaPlan): Plan {
     nombre: SECCIONES[id].nombre,
     detalle: SECCIONES[id].detalle,
     elementos: elementos.filter((elemento) => perteneceA(id, categoriaDe(elemento))),
-    omitida: omitidas.has(id),
+    cubierta: cubiertas.has(id),
     limite: limiteDe(id, entrada),
   }));
 
@@ -170,9 +171,8 @@ export function armarPlan(entrada: EntradaPlan): Plan {
     (elemento) => !plantilla.some((id) => perteneceA(id, categoriaDe(elemento))),
   );
 
-  const activas = secciones.filter((seccion) => !seccion.omitida);
-  const pendientes = activas.filter((seccion) => seccion.elementos.length === 0);
-  const elegidas = activas.length - pendientes.length;
+  const pendientes = secciones.filter((seccion) => !seccion.cubierta && seccion.elementos.length === 0);
+  const listas = secciones.length - pendientes.length;
 
   const conFecha = pendientes.flatMap((seccion) =>
     tieneFecha(seccion.limite) ? [{ seccion, limite: seccion.limite }] : [],
@@ -182,9 +182,9 @@ export function armarPlan(entrada: EntradaPlan): Plan {
   return {
     secciones,
     extras,
-    elegidas,
-    total: activas.length,
-    porcentaje: activas.length === 0 ? 100 : Math.round((elegidas / activas.length) * 100),
+    listas,
+    total: secciones.length,
+    porcentaje: secciones.length === 0 ? 100 : Math.round((listas / secciones.length) * 100),
     pendientes,
     proxima,
     sinApartar: entrada.itemsCarrito.reduce((total, item) => total + item.cantidad, 0),
