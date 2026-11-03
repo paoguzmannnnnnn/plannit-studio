@@ -42,7 +42,10 @@ export function TarjetaProducto({ producto, mostrarEmprendimiento = true, estadi
             Elegido para {estadisticas.vecesElegido} eventos
           </p>
         )}
-        <p className="mt-auto pt-2 text-sm font-bold">{formatearDolares(producto.precioCentavos)}</p>
+        <p className="mt-auto pt-2 text-sm font-bold">
+          {producto.tieneTamanos && <span className="font-normal text-gris">Desde </span>}
+          {formatearDolares(producto.precioCentavos)}
+        </p>
       </div>
     </Link>
   );

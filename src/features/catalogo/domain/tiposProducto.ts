@@ -13,7 +13,7 @@ export interface EstrategiaTipoProducto {
   readonly descripcion: string;
   /** El emprendedor debe aceptar el pedido antes de que el cliente pague */
   readonly requiereAceptacion: boolean;
-  /** El cliente puede dejar colores, texto, notas o foto de referencia */
+  /** El cliente puede dejar texto, notas o foto de referencia (los colores valen para ambos tipos) */
   readonly admitePersonalizacion: boolean;
   parsear(entrada: unknown): Resultado<CamposTipo>;
   /** Cómo lo ve el emprendedor en su panel */
@@ -54,7 +54,6 @@ const inmediatoSchema = z
       stockPorFecha: datos.stock,
       cupoDiario: null,
       anticipacionHoras: datos.horas_preparacion,
-      permiteColores: false,
       permiteTexto: false,
       permiteReferencia: false,
     }),
@@ -84,7 +83,6 @@ const personalizableSchema = z
   .object({
     dias_anticipacion: entero("Los días de anticipación van de 1 a 90", 1, 90),
     cupo: entero("Los pedidos por día van de 1 a 50", 1, 50),
-    permite_colores: casilla,
     permite_texto: casilla,
     permite_referencia: casilla,
   })
@@ -93,7 +91,6 @@ const personalizableSchema = z
       stockPorFecha: null,
       cupoDiario: datos.cupo,
       anticipacionHoras: datos.dias_anticipacion * HORAS_POR_DIA,
-      permiteColores: datos.permite_colores,
       permiteTexto: datos.permite_texto,
       permiteReferencia: datos.permite_referencia,
     }),

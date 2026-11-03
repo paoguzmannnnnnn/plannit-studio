@@ -1,4 +1,4 @@
-import type { CamposTipo, TipoProducto } from "@/features/catalogo/domain/producto";
+import type { CamposTipo, Extra, Opciones, Tamano, TipoProducto } from "@/features/catalogo/domain/producto";
 import type { ZonaConCosto } from "@/features/emprendimientos/domain/emprendimiento";
 
 // Modelos de lectura para el lado público: solo lo que el cliente necesita ver
@@ -27,6 +27,9 @@ export type TarjetaProducto = CamposTipo & {
   tipo: TipoProducto;
   precioCentavos: number;
   portadaUrl: string | null;
+  /** Si tiene tamaños, el precio es "desde" */
+  tieneTamanos: boolean;
+  maxColores: Opciones["maxColores"];
   emprendimiento: EmprendimientoBreve;
 };
 
@@ -34,6 +37,8 @@ export type ProductoPublico = TarjetaProducto & {
   descripcion: string | null;
   categoria: string;
   fotos: string[];
+  tamanos: Tamano[];
+  extras: Extra[];
 };
 
 // Prueba social: cuántos eventos lo eligieron y cómo lo califican

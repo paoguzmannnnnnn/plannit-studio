@@ -10,23 +10,61 @@ import { validarImagen } from "@/shared/storage/reglasImagenes";
 import { subirImagen } from "@/shared/storage/subirImagen";
 import { createClient } from "@/shared/supabase/server";
 import type { ClienteSupabase } from "@/shared/supabase/tipos";
-import { MAX_FOTOS_PRODUCTO, type Producto, type ProductoRepository } from "../domain/producto";
-import { datosComunesSchema, tipoProductoSchema } from "../domain/schemas";
+import {
+  MAX_FOTOS_PRODUCTO,
+  type DatosComunes,
+  type OpcionesEntrada,
+  type Producto,
+  type ProductoRepository,
+} from "../domain/producto";
+import { datosComunesSchema, opcionesSchema, precioSchema, tipoProductoSchema } from "../domain/schemas";
 import { ESTRATEGIAS_TIPO } from "../domain/tiposProducto";
 import { crearRepositorioProductos } from "../infrastructure/productoRepository";
 
 const RUTA_CATALOGO = "/panel/catalogo";
 const ERROR_GUARDAR = "No pudimos guardar el producto. Intenta de nuevo.";
 
-// ---------------- Helpers ----------------
+type Leido<T> = { ok: true; valor: T } | { ok: false; error: EstadoAccion };
 
-function leerDatosComunes(formData: FormData) {
-  return datosComunesSchema.safeParse({
+// ---------------- Lectura del formulario ----------------
+
+function leerJson(formData: FormData, campo: string): unknown {
+  try {
+    return JSON.parse(texto(formData, campo) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function leerOpciones(formData: FormData): Leido<OpcionesEntrada> {
+  const resultado = opcionesSchema.safeParse({
+    maxColores: texto(formData, "max_colores") || "0",
+    tamanos: leerJson(formData, "tamanos"),
+    extras: leerJson(formData, "extras"),
+  });
+  return resultado.success
+    ? { ok: true, valor: resultado.data }
+    : { ok: false, error: primerError(resultado.error.issues) };
+}
+
+// El precio solo se escribe si no hay tamaños; con tamaños, manda el más barato
+function leerDatosComunes(formData: FormData, opciones: OpcionesEntrada): Leido<DatosComunes> {
+  const comunes = datosComunesSchema.safeParse({
     nombre: texto(formData, "nombre"),
     descripcion: texto(formData, "descripcion"),
     categoriaId: texto(formData, "categoria"),
-    precioCentavos: texto(formData, "precio"),
   });
+  if (!comunes.success) return { ok: false, error: primerError(comunes.error.issues) };
+
+  if (opciones.tamanos.length > 0) {
+    const desde = Math.min(...opciones.tamanos.map((tamano) => tamano.precioCentavos));
+    return { ok: true, valor: { ...comunes.data, precioCentavos: desde } };
+  }
+
+  const precio = precioSchema.safeParse(texto(formData, "precio"));
+  return precio.success
+    ? { ok: true, valor: { ...comunes.data, precioCentavos: precio.data } }
+    : { ok: false, error: primerError(precio.error.issues) };
 }
 
 function validarFotos(fotos: File[], disponibles: number): string | null {
@@ -73,6 +111,7 @@ async function cargarProductoPropio(productoId: string): Promise<ContextoProduct
 function revalidarProducto(productoId: string) {
   revalidatePath(RUTA_CATALOGO);
   revalidatePath(`${RUTA_CATALOGO}/${productoId}`);
+  revalidatePath(`/productos/${productoId}`);
 }
 
 // ---------------- Acciones ----------------
@@ -90,8 +129,11 @@ export async function crearProducto(
   const tipo = tipoProductoSchema.safeParse(texto(formData, "tipo"));
   if (!tipo.success) return primerError(tipo.error.issues);
 
-  const comunes = leerDatosComunes(formData);
-  if (!comunes.success) return primerError(comunes.error.issues);
+  const opciones = leerOpciones(formData);
+  if (!opciones.ok) return opciones.error;
+
+  const comunes = leerDatosComunes(formData, opciones.valor);
+  if (!comunes.ok) return comunes.error;
 
   const campos = ESTRATEGIAS_TIPO[tipo.data].parsear(Object.fromEntries(formData));
   if (!campos.ok) return { error: campos.error };
@@ -107,8 +149,9 @@ export async function crearProducto(
     const fotosUrls = await subirFotos(supabase, usuario.id, fotos);
     await crearRepositorioProductos(supabase).crear(emprendimiento.id, {
       tipo: tipo.data,
-      ...comunes.data,
+      ...comunes.valor,
       ...campos.valor,
+      ...opciones.valor,
       fotosUrls,
     });
   } catch (error) {
@@ -129,8 +172,11 @@ export async function actualizarProducto(
   if (!contexto) return { error: "No encontramos este producto" };
   const { producto, repositorio, supabase, usuarioId } = contexto;
 
-  const comunes = leerDatosComunes(formData);
-  if (!comunes.success) return primerError(comunes.error.issues);
+  const opciones = leerOpciones(formData);
+  if (!opciones.ok) return opciones.error;
+
+  const comunes = leerDatosComunes(formData, opciones.valor);
+  if (!comunes.ok) return comunes.error;
 
   // El tipo no cambia al editar: se usa la estrategia del tipo guardado
   const campos = ESTRATEGIAS_TIPO[producto.tipo].parsear(Object.fromEntries(formData));
@@ -142,7 +188,7 @@ export async function actualizarProducto(
 
   try {
     const urls = await subirFotos(supabase, usuarioId, fotosNuevas);
-    await repositorio.actualizar(producto.id, { ...comunes.data, ...campos.valor });
+    await repositorio.actualizar(producto.id, { ...comunes.valor, ...campos.valor, ...opciones.valor });
     await repositorio.agregarFotos(producto.id, urls, producto.fotos.length);
   } catch (error) {
     console.error("[catalogo:actualizar]", error);

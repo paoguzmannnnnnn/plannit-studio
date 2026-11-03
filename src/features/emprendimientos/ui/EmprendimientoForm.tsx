@@ -8,6 +8,7 @@ import { Button } from "@/shared/ui/Button";
 import { Campo } from "@/shared/ui/Campo";
 import type { Emprendimiento } from "../domain/emprendimiento";
 import { SelectorLogo } from "./SelectorLogo";
+import { SelectorPaleta } from "./SelectorPaleta";
 import { SelectorZonas } from "./SelectorZonas";
 
 type Props = {
@@ -47,6 +48,7 @@ export function EmprendimientoForm({ zonas, emprendimiento, accion, textoBoton }
         placeholder="Cuéntale a tus clientes qué haces y qué te hace especial"
       />
       <SelectorZonas zonas={zonas} iniciales={emprendimiento?.zonas} />
+      <SelectorPaleta iniciales={emprendimiento?.paleta} />
 
       {estado.error && (
         <p role="alert" className="text-sm text-sandia">

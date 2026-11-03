@@ -41,6 +41,7 @@ export type ProductoDisponible = {
   nombre: string;
   tipo: TipoProducto;
   precioCentavos: number;
+  tieneTamanos: boolean;
   fotoUrl: string | null;
   disponibles: number;
   costoEnvioCentavos: number;

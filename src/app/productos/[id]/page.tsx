@@ -53,7 +53,10 @@ export default async function ProductoPage({ params, searchParams }: Props) {
               {estrategia.etiqueta} · {estrategia.resumenCliente(producto)}
             </span>
             <h1 className="font-display text-3xl font-black">{producto.nombre}</h1>
-            <p className="text-2xl font-bold">{formatearDolares(producto.precioCentavos)}</p>
+            <p className="text-2xl font-bold">
+              {producto.tamanos.length > 0 && <span className="text-base font-normal text-gris">Desde </span>}
+              {formatearDolares(producto.precioCentavos)}
+            </p>
             <p className="text-xs text-gris">{producto.categoria}</p>
           </div>
 

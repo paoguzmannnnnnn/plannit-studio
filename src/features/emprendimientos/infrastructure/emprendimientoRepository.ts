@@ -1,3 +1,4 @@
+import { normalizarPaleta } from "@/features/colores/domain/colores";
 import type { ClienteSupabase } from "@/shared/supabase/tipos";
 import type {
   DatosEmprendimiento,
@@ -14,6 +15,7 @@ function aParametros(datos: DatosEmprendimiento) {
     })),
     p_descripcion: datos.descripcion ?? undefined,
     p_logo_url: datos.logoUrl ?? undefined,
+    p_paleta: datos.paleta,
   };
 }
 
@@ -25,7 +27,7 @@ export function crearRepositorioEmprendimientos(
       const { data, error } = await supabase
         .from("emprendimientos")
         .select(
-          "id, nombre, descripcion, logo_url, aprobado, rating_promedio, total_resenas, emprendimiento_zonas(costo_envio_centavos, zonas(id, nombre))",
+          "id, nombre, descripcion, logo_url, aprobado, rating_promedio, total_resenas, paleta, emprendimiento_zonas(costo_envio_centavos, zonas(id, nombre))",
         )
         .eq("owner_id", ownerId)
         .maybeSingle();
@@ -41,6 +43,7 @@ export function crearRepositorioEmprendimientos(
         aprobado: data.aprobado,
         ratingPromedio: Number(data.rating_promedio),
         totalResenas: data.total_resenas,
+        paleta: normalizarPaleta(data.paleta),
         zonas: [...data.emprendimiento_zonas]
           .sort((a, b) => a.zonas.id - b.zonas.id)
           .map((cobertura) => ({
@@ -61,6 +64,16 @@ export function crearRepositorioEmprendimientos(
     async actualizar(datos) {
       const { error } = await supabase.rpc("actualizar_emprendimiento", aParametros(datos));
       if (error) throw error;
+    },
+
+    async paletaDe(emprendimientoId) {
+      const { data, error } = await supabase
+        .from("emprendimientos")
+        .select("paleta")
+        .eq("id", emprendimientoId)
+        .maybeSingle();
+      if (error) throw error;
+      return normalizarPaleta(data?.paleta ?? []);
     },
   };
 }

@@ -1,13 +1,17 @@
 import { z } from "zod";
 import type { TipoProducto } from "@/features/catalogo/domain/producto";
+import { precioConOpciones } from "@/features/catalogo/domain/opciones";
 import { ESTRATEGIAS_TIPO } from "@/features/catalogo/domain/tiposProducto";
 
 // ---------- Personalización que el cliente deja en un producto ----------
 export const personalizacionSchema = z.object({
-  colores: z.string().trim().max(80, "Los colores pueden tener máximo 80 caracteres").optional(),
+  colores: z.string().trim().max(160, "Los colores pueden tener máximo 160 caracteres").optional(),
   texto: z.string().trim().max(80, "El texto puede tener máximo 80 caracteres").optional(),
   notas: z.string().trim().max(400, "Las notas pueden tener máximo 400 caracteres").optional(),
   referenciaUrl: z.string().url().optional(),
+  // Los pone la base de datos al apartar (copia de lo elegido, por si luego cambia el catálogo)
+  tamano: z.string().optional(),
+  extras: z.array(z.string()).optional(),
 });
 
 export type Personalizacion = z.infer<typeof personalizacionSchema>;
@@ -18,6 +22,8 @@ export function esPersonalizacionVacia(personalizacion: Personalizacion): boolea
 
 export function describirPersonalizacion(personalizacion: Personalizacion): string[] {
   return [
+    personalizacion.tamano && `Tamaño: ${personalizacion.tamano}`,
+    personalizacion.extras?.length && `Extras: ${personalizacion.extras.join(", ")}`,
     personalizacion.colores && `Colores: ${personalizacion.colores}`,
     personalizacion.texto && `Texto: ${personalizacion.texto}`,
     personalizacion.notas && `Notas: ${personalizacion.notas}`,
@@ -34,11 +40,17 @@ export type ProductoEnCarrito = {
   emprendimiento: { id: string; nombre: string };
 };
 
+export type OpcionElegida = { id: string; nombre: string; precioCentavos: number };
+
+export type OpcionesElegidas = { tamanoId: string | null; extrasIds: string[] };
+
 export type ItemCarrito = {
   id: string;
   productoId: string;
   cantidad: number;
   personalizacion: Personalizacion;
+  tamano: OpcionElegida | null;
+  extras: OpcionElegida[];
   /** null si el producto se pausó o dejó de ser visible */
   producto: ProductoEnCarrito | null;
 };
@@ -76,23 +88,48 @@ export type Carrito = {
 
 const sumar = (valores: readonly number[]) => valores.reduce((total, valor) => total + valor, 0);
 
+export function precioUnitarioDe(item: ItemCarrito): number {
+  return item.producto ? precioConOpciones(item.producto.precioCentavos, item.tamano, item.extras) : 0;
+}
+
 export function subtotalDeItems(items: readonly ItemCarrito[]): number {
-  return sumar(items.map((item) => (item.producto?.precioCentavos ?? 0) * item.cantidad));
+  return sumar(items.map((item) => precioUnitarioDe(item) * item.cantidad));
+}
+
+export function describirOpciones(item: Pick<ItemCarrito, "tamano" | "extras">): string[] {
+  return [
+    item.tamano && `Tamaño: ${item.tamano.nombre}`,
+    item.extras.length > 0 && `Extras: ${item.extras.map((extra) => extra.nombre).join(", ")}`,
+  ].filter((linea): linea is string => Boolean(linea));
+}
+
+function mismasOpciones(item: ItemCarrito, opciones: OpcionesElegidas): boolean {
+  const extras = item.extras.map((extra) => extra.id).sort();
+  const buscados = [...opciones.extrasIds].sort();
+  return (
+    (item.tamano?.id ?? null) === opciones.tamanoId &&
+    extras.length === buscados.length &&
+    extras.every((id, indice) => id === buscados[indice])
+  );
 }
 
 export function cantidadEnCarrito(items: readonly ItemCarrito[], productoId: string): number {
   return sumar(items.filter((item) => item.productoId === productoId).map((item) => item.cantidad));
 }
 
-// Un producto sin personalización se suma al renglón que ya existe; con personalización va aparte
+// Mismo producto, mismas opciones y sin personalización: se suma al renglón que ya existe
 export function itemParaSumar(
   items: readonly ItemCarrito[],
   productoId: string,
   personalizacion: Personalizacion,
+  opciones: OpcionesElegidas,
 ): ItemCarrito | undefined {
   if (!esPersonalizacionVacia(personalizacion)) return undefined;
   return items.find(
-    (item) => item.productoId === productoId && esPersonalizacionVacia(item.personalizacion),
+    (item) =>
+      item.productoId === productoId &&
+      esPersonalizacionVacia(item.personalizacion) &&
+      mismasOpciones(item, opciones),
   );
 }
 
@@ -121,7 +158,7 @@ export function armarCarrito(
       ...item,
       estado,
       disponibles: disponible?.disponibles ?? 0,
-      totalCentavos: item.producto.precioCentavos * item.cantidad,
+      totalCentavos: precioUnitarioDe(item) * item.cantidad,
     };
   });
 
@@ -169,7 +206,13 @@ export function armarCarrito(
 export interface CarritoRepository {
   listarItems(eventoId: string): Promise<ItemCarrito[]>;
   disponibilidad(eventoId: string): Promise<Map<string, Disponibilidad>>;
-  agregar(eventoId: string, productoId: string, cantidad: number, personalizacion: Personalizacion): Promise<void>;
+  agregar(
+    eventoId: string,
+    productoId: string,
+    cantidad: number,
+    personalizacion: Personalizacion,
+    opciones: OpcionesElegidas,
+  ): Promise<void>;
   cambiarCantidad(eventoId: string, itemId: string, cantidad: number): Promise<void>;
   quitar(eventoId: string, itemId: string): Promise<void>;
   confirmar(eventoId: string): Promise<string>;

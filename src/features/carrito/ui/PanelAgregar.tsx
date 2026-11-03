@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { obtenerUsuarioActual } from "@/features/auth/infrastructure/sesion";
 import { ESTRATEGIAS_TIPO } from "@/features/catalogo/domain/tiposProducto";
+import { crearRepositorioEmprendimientos } from "@/features/emprendimientos/infrastructure/emprendimientoRepository";
 import { crearRepositorioEventos } from "@/features/eventos/infrastructure/eventoRepository";
 import type { ProductoPublico } from "@/features/explorar/domain/vistas";
 import { formatearDolares } from "@/shared/dinero";
@@ -25,9 +26,12 @@ export async function PanelAgregar({ producto, eventoId }: { producto: ProductoP
   if (!evento || evento.clienteId !== usuario.id || horasHasta(evento.fechaEntrega) <= 0) return null;
 
   const carrito = crearRepositorioCarrito(supabase);
-  const [disponibilidad, items] = await Promise.all([
+  const [disponibilidad, items, paleta] = await Promise.all([
     carrito.disponibilidad(evento.id),
     carrito.listarItems(evento.id),
+    producto.maxColores > 0
+      ? crearRepositorioEmprendimientos(supabase).paletaDe(producto.emprendimiento.id)
+      : Promise.resolve([]),
   ]);
 
   const hrefPlan = `/eventos/${evento.id}`;
@@ -77,9 +81,11 @@ export async function PanelAgregar({ producto, eventoId }: { producto: ProductoP
         accion={agregarAlCarrito.bind(null, evento.id, producto.id)}
         maximo={maximo}
         precioCentavos={producto.precioCentavos}
+        tamanos={producto.tamanos}
+        extras={producto.extras}
         hrefPlan={hrefPlan}
         opciones={{
-          colores: producto.permiteColores,
+          colores: producto.maxColores > 0 ? { paleta, maximo: producto.maxColores } : null,
           texto: producto.permiteTexto,
           referencia: producto.permiteReferencia,
           notas: estrategia.admitePersonalizacion,

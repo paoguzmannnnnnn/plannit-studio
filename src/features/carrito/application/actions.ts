@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { obtenerUsuarioActual } from "@/features/auth/infrastructure/sesion";
 import { ESTRATEGIAS_TIPO } from "@/features/catalogo/domain/tiposProducto";
+import { colorDe, normalizarPaleta } from "@/features/colores/domain/colores";
+import { crearRepositorioEmprendimientos } from "@/features/emprendimientos/infrastructure/emprendimientoRepository";
 import type { Evento } from "@/features/eventos/domain/evento";
 import { crearRepositorioEventos } from "@/features/eventos/infrastructure/eventoRepository";
 import type { ProductoPublico } from "@/features/explorar/domain/vistas";
@@ -20,6 +22,7 @@ import {
   cantidadEnCarrito,
   itemParaSumar,
   personalizacionSchema,
+  type OpcionesElegidas,
   type Personalizacion,
 } from "../domain/carrito";
 import { crearRepositorioCarrito } from "../infrastructure/carritoRepository";
@@ -46,19 +49,57 @@ function revalidarCarrito(eventoId: string) {
   revalidatePath(`/eventos/${eventoId}/carrito`);
 }
 
+type ResultadoColores = { ok: true; valor: string | undefined } | { ok: false; error: string };
+
+// Colores tocados (solo los de la paleta del emprendimiento) + "otro color" escrito, en un solo texto
+async function leerColores(formData: FormData, producto: ProductoPublico, contexto: Contexto): Promise<ResultadoColores> {
+  if (producto.maxColores === 0) return { ok: true, valor: undefined };
+
+  const paleta = await crearRepositorioEmprendimientos(contexto.supabase).paletaDe(producto.emprendimiento.id);
+  const elegidos = normalizarPaleta(formData.getAll("color")).filter((id) => paleta.includes(id));
+  if (elegidos.length > producto.maxColores) {
+    return { ok: false, error: `Elige máximo ${producto.maxColores} ${producto.maxColores === 1 ? "color" : "colores"}` };
+  }
+
+  const otro = texto(formData, "colores").trim();
+  const partes = [...elegidos.map((id) => colorDe(id).nombre), ...(otro ? [otro] : [])];
+  return { ok: true, valor: partes.join(", ") || undefined };
+}
+
+// Tamaño (obligatorio si el producto tiene) y extras: solo se aceptan los del producto
+function leerOpciones(
+  formData: FormData,
+  producto: ProductoPublico,
+): { ok: true; valor: OpcionesElegidas } | { ok: false; error: string } {
+  const tamanoId = texto(formData, "tamano") || null;
+  if (producto.tamanos.length > 0 && !producto.tamanos.some((tamano) => tamano.id === tamanoId)) {
+    return { ok: false, error: "Elige un tamaño" };
+  }
+
+  const pedidos = new Set(formData.getAll("extra"));
+  const extrasIds = producto.extras.filter((extra) => pedidos.has(extra.id)).map((extra) => extra.id);
+  return { ok: true, valor: { tamanoId: producto.tamanos.length > 0 ? tamanoId : null, extrasIds } };
+}
+
 // Solo se aceptan los campos que el producto permite personalizar
 async function leerPersonalizacion(
   formData: FormData,
   producto: ProductoPublico,
   contexto: Contexto,
 ): Promise<{ ok: true; valor: Personalizacion } | { ok: false; error: string }> {
-  if (!ESTRATEGIAS_TIPO[producto.tipo].admitePersonalizacion) return { ok: true, valor: {} };
+  // Los colores valen para los dos tipos de producto
+  const colores = await leerColores(formData, producto, contexto);
+  if (!colores.ok) return colores;
+
+  if (!ESTRATEGIAS_TIPO[producto.tipo].admitePersonalizacion) {
+    return { ok: true, valor: colores.valor ? { colores: colores.valor } : {} };
+  }
 
   const opcional = (campo: string, permitido: boolean) =>
     permitido ? texto(formData, campo).trim() || undefined : undefined;
 
   const resultado = personalizacionSchema.safeParse({
-    colores: opcional("colores", producto.permiteColores),
+    colores: colores.valor,
     texto: opcional("texto", producto.permiteTexto),
     notas: opcional("notas", true),
   });
@@ -103,15 +144,18 @@ export async function agregarAlCarrito(
     };
   }
 
+  const opciones = leerOpciones(formData, producto);
+  if (!opciones.ok) return { error: opciones.error };
+
   try {
     const personalizacion = await leerPersonalizacion(formData, producto, contexto);
     if (!personalizacion.ok) return { error: personalizacion.error };
 
-    const existente = itemParaSumar(items, productoId, personalizacion.valor);
+    const existente = itemParaSumar(items, productoId, personalizacion.valor, opciones.valor);
     if (existente) {
       await carrito.cambiarCantidad(eventoId, existente.id, existente.cantidad + cantidad.data);
     } else {
-      await carrito.agregar(eventoId, productoId, cantidad.data, personalizacion.valor);
+      await carrito.agregar(eventoId, productoId, cantidad.data, personalizacion.valor, opciones.valor);
     }
   } catch (error) {
     console.error("[carrito:agregar]", error);

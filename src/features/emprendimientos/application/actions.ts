@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { obtenerUsuarioActual } from "@/features/auth/infrastructure/sesion";
+import { normalizarPaleta } from "@/features/colores/domain/colores";
 import { archivo, primerError, texto, type EstadoAccion } from "@/shared/acciones";
 import { eliminarImagen } from "@/shared/storage/eliminarImagen";
 import { validarImagen } from "@/shared/storage/reglasImagenes";
 import { subirImagen } from "@/shared/storage/subirImagen";
 import { esViolacionDeUnicidad, mensajeDeNegocio } from "@/shared/supabase/errores";
 import { createClient } from "@/shared/supabase/server";
-import type { ZonaCobertura } from "../domain/emprendimiento";
+import type { DatosEmprendimiento } from "../domain/emprendimiento";
 import { datosEmprendimientoSchema } from "../domain/schemas";
 import { crearRepositorioEmprendimientos } from "../infrastructure/emprendimientoRepository";
 import { obtenerMiEmprendimiento } from "./miEmprendimiento";
@@ -18,7 +19,7 @@ const ERROR_GUARDAR = "No pudimos guardar tu emprendimiento. Intenta de nuevo.";
 
 type FormularioValido = {
   ok: true;
-  datos: { nombre: string; descripcion: string | null; zonas: ZonaCobertura[] };
+  datos: Omit<DatosEmprendimiento, "logoUrl">;
   logo: File | null;
 };
 type FormularioInvalido = { ok: false; estado: EstadoAccion };
@@ -31,7 +32,7 @@ function leerZonas(formData: FormData) {
   }));
 }
 
-// Valida el formulario completo (datos + logo) igual para crear y editar
+// Valida el formulario completo (datos + paleta + logo) igual para crear y editar
 function leerFormulario(formData: FormData): FormularioValido | FormularioInvalido {
   const datos = datosEmprendimientoSchema.safeParse({
     nombre: texto(formData, "nombre"),
@@ -44,7 +45,7 @@ function leerFormulario(formData: FormData): FormularioValido | FormularioInvali
   const errorLogo = logo ? validarImagen(logo, "logos") : null;
   if (errorLogo) return { ok: false, estado: { error: errorLogo } };
 
-  return { ok: true, datos: datos.data, logo };
+  return { ok: true, datos: { ...datos.data, paleta: normalizarPaleta(formData.getAll("paleta")) }, logo };
 }
 
 export async function crearEmprendimiento(

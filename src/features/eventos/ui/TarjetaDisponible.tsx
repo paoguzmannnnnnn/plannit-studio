@@ -35,7 +35,10 @@ export function TarjetaDisponible({ producto, eventoId }: Props) {
         <p className="line-clamp-2 text-sm font-bold">{producto.nombre}</p>
         <p className="truncate text-xs text-gris">{producto.emprendimiento.nombre}</p>
         <div className="mt-auto pt-2">
-          <p className="text-sm font-bold">{formatearDolares(producto.precioCentavos)}</p>
+          <p className="text-sm font-bold">
+            {producto.tieneTamanos && <span className="font-normal text-gris">Desde </span>}
+            {formatearDolares(producto.precioCentavos)}
+          </p>
           <p className="text-[11px] text-gris">{envio}</p>
         </div>
       </div>

@@ -11,7 +11,6 @@ export type CamposTipo = {
   stockPorFecha: number | null;
   cupoDiario: number | null;
   anticipacionHoras: number;
-  permiteColores: boolean;
   permiteTexto: boolean;
   permiteReferencia: boolean;
 };
@@ -20,13 +19,32 @@ export type DatosComunes = {
   nombre: string;
   descripcion: string | null;
   categoriaId: number;
+  /** Con tamaños, es el precio del más barato (lo mantiene la base de datos) */
   precioCentavos: number;
 };
+
+// ---------- Opciones: valen para los dos tipos de producto ----------
+export type Tamano = { id: string; nombre: string; detalle: string | null; precioCentavos: number };
+export type Extra = { id: string; nombre: string; precioCentavos: number };
+
+/** Al guardar: lo que ya existe trae id; lo nuevo, no */
+export type TamanoEntrada = Omit<Tamano, "id"> & { id?: string };
+export type ExtraEntrada = Omit<Extra, "id"> & { id?: string };
+
+export type Opciones = {
+  /** Cuántos colores de la paleta puede elegir el cliente (0 = no elige colores) */
+  maxColores: number;
+  tamanos: Tamano[];
+  extras: Extra[];
+};
+
+export type OpcionesEntrada = { maxColores: number; tamanos: TamanoEntrada[]; extras: ExtraEntrada[] };
 
 export type Foto = { id: string; url: string };
 
 export type Producto = DatosComunes &
-  CamposTipo & {
+  CamposTipo &
+  Opciones & {
     id: string;
     emprendimientoId: string;
     tipo: TipoProducto;
@@ -34,9 +52,9 @@ export type Producto = DatosComunes &
     fotos: Foto[];
   };
 
-export type NuevoProducto = DatosComunes & CamposTipo & { tipo: TipoProducto; fotosUrls: string[] };
+export type CambiosProducto = DatosComunes & CamposTipo & OpcionesEntrada;
 
-export type CambiosProducto = DatosComunes & CamposTipo;
+export type NuevoProducto = CambiosProducto & { tipo: TipoProducto; fotosUrls: string[] };
 
 // Contrato del repositorio: la app depende de esto, no de Supabase
 export interface ProductoRepository {

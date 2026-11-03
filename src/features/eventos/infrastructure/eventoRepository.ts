@@ -90,6 +90,7 @@ export function crearRepositorioEventos(supabase: ClienteSupabase): EventoReposi
         nombre: fila.nombre,
         tipo,
         precioCentavos: fila.precio_centavos,
+        tieneTamanos: fila.tiene_tamanos,
         fotoUrl: fila.foto_url,
         disponibles: fila.disponibles,
         costoEnvioCentavos: fila.costo_envio_centavos,

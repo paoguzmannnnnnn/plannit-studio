@@ -6,11 +6,18 @@ import {
   type CarritoRepository,
   type Disponibilidad,
   type ItemCarrito,
+  type OpcionElegida,
 } from "../domain/carrito";
 
 type Tablas = Database["public"]["Tables"];
 
-type FilaItem = Pick<Tablas["carrito_items"]["Row"], "id" | "producto_id" | "cantidad" | "personalizacion"> & {
+type FilaOpcion = { id: string; nombre: string; precio_centavos: number };
+
+type FilaItem = Pick<
+  Tablas["carrito_items"]["Row"],
+  "id" | "producto_id" | "cantidad" | "personalizacion" | "extras"
+> & {
+  producto_tamanos: FilaOpcion | null;
   // Puede venir null si el producto se pausó (RLS ya no lo deja ver)
   productos:
     | (Pick<Tablas["productos"]["Row"], "nombre" | "tipo" | "precio_centavos"> & {
@@ -21,15 +28,24 @@ type FilaItem = Pick<Tablas["carrito_items"]["Row"], "id" | "producto_id" | "can
 };
 
 const SELECT_ITEM =
-  "id, producto_id, cantidad, personalizacion, productos(nombre, tipo, precio_centavos, producto_fotos(url, orden), emprendimientos(id, nombre))";
+  "id, producto_id, cantidad, personalizacion, extras, producto_tamanos(id, nombre, precio_centavos), productos(nombre, tipo, precio_centavos, producto_fotos(url, orden), emprendimientos(id, nombre))";
 
-function aItem(fila: FilaItem): ItemCarrito {
+const aOpcion = (fila: FilaOpcion): OpcionElegida => ({
+  id: fila.id,
+  nombre: fila.nombre,
+  precioCentavos: fila.precio_centavos,
+});
+
+function aItem(fila: FilaItem, extras: ReadonlyMap<string, OpcionElegida>): ItemCarrito {
   const producto = fila.productos;
   return {
     id: fila.id,
     productoId: fila.producto_id,
     cantidad: fila.cantidad,
     personalizacion: personalizacionSchema.safeParse(fila.personalizacion).data ?? {},
+    tamano: fila.producto_tamanos ? aOpcion(fila.producto_tamanos) : null,
+    // Si el emprendedor borró un extra, simplemente deja de contar
+    extras: fila.extras.flatMap((id) => extras.get(id) ?? []),
     producto:
       producto && producto.emprendimientos
         ? {
@@ -44,6 +60,16 @@ function aItem(fila: FilaItem): ItemCarrito {
 }
 
 export function crearRepositorioCarrito(supabase: ClienteSupabase): CarritoRepository {
+  async function extrasPorId(ids: readonly string[]): Promise<Map<string, OpcionElegida>> {
+    if (ids.length === 0) return new Map();
+    const { data, error } = await supabase
+      .from("producto_extras")
+      .select("id, nombre, precio_centavos")
+      .in("id", [...new Set(ids)]);
+    if (error) throw error;
+    return new Map(data.map((fila) => [fila.id, aOpcion(fila)]));
+  }
+
   return {
     async listarItems(eventoId) {
       const { data, error } = await supabase
@@ -53,7 +79,9 @@ export function crearRepositorioCarrito(supabase: ClienteSupabase): CarritoRepos
         .order("created_at");
 
       if (error) throw error;
-      return data.map(aItem);
+      const filas = data as FilaItem[];
+      const extras = await extrasPorId(filas.flatMap((fila) => fila.extras));
+      return filas.map((fila) => aItem(fila, extras));
     },
 
     // La regla vive en Postgres (misma que usan las pestañas del evento)
@@ -69,10 +97,15 @@ export function crearRepositorioCarrito(supabase: ClienteSupabase): CarritoRepos
       );
     },
 
-    async agregar(eventoId, productoId, cantidad, personalizacion) {
-      const { error } = await supabase
-        .from("carrito_items")
-        .insert({ evento_id: eventoId, producto_id: productoId, cantidad, personalizacion });
+    async agregar(eventoId, productoId, cantidad, personalizacion, opciones) {
+      const { error } = await supabase.from("carrito_items").insert({
+        evento_id: eventoId,
+        producto_id: productoId,
+        cantidad,
+        personalizacion,
+        tamano_id: opciones.tamanoId,
+        extras: opciones.extrasIds,
+      });
       if (error) throw error;
     },
 
@@ -94,7 +127,7 @@ export function crearRepositorioCarrito(supabase: ClienteSupabase): CarritoRepos
       if (error) throw error;
     },
 
-    // Checkout atómico en Postgres: revalida, bloquea cupos y crea un pedido por emprendimiento
+    // Apartar es atómico en Postgres: revalida, calcula precios con opciones y crea un pedido por emprendimiento
     async confirmar(eventoId) {
       const { data, error } = await supabase.rpc("crear_orden", { p_evento_id: eventoId });
       if (error) throw error;

@@ -9,9 +9,11 @@ import { Button } from "@/shared/ui/Button";
 import { Campo } from "@/shared/ui/Campo";
 import { Selector } from "@/shared/ui/Selector";
 import { SelectorFotos } from "@/shared/ui/SelectorFotos";
+import { MAX_COLORES_PRODUCTO } from "@/features/colores/domain/colores";
 import { MAX_FOTOS_PRODUCTO, type Producto, type TipoProducto } from "../domain/producto";
 import { ESTRATEGIAS_TIPO } from "../domain/tiposProducto";
 import { CAMPOS_POR_TIPO } from "./camposPorTipo";
+import { EditorOpciones } from "./EditorOpciones";
 import { SelectorTipo } from "./SelectorTipo";
 
 type Props = {
@@ -24,6 +26,7 @@ type Props = {
 export function ProductoForm({ categorias, producto, accion, textoBoton }: Props) {
   const [estado, ejecutar, pendiente] = useActionState(accion, ESTADO_INICIAL);
   const [tipo, setTipo] = useState<TipoProducto>(producto?.tipo ?? "inmediato");
+  const [hayTamanos, setHayTamanos] = useState((producto?.tamanos.length ?? 0) > 0);
   const CamposDelTipo = CAMPOS_POR_TIPO[tipo];
 
   // Enviamos a mano para que el formulario NO se limpie si hay un error
@@ -55,14 +58,18 @@ export function ProductoForm({ categorias, producto, accion, textoBoton }: Props
           defaultValue={producto?.categoriaId ?? ""}
           required
         />
-        <Campo
-          label="Precio ($)"
-          name="precio"
-          inputMode="decimal"
-          placeholder="25.00"
-          defaultValue={producto ? aMontoEditable(producto.precioCentavos) : ""}
-          required
-        />
+        {hayTamanos ? (
+          <p className="flex flex-col justify-end text-xs text-gris">El precio depende del tamaño que elija el cliente.</p>
+        ) : (
+          <Campo
+            label="Precio ($)"
+            name="precio"
+            inputMode="decimal"
+            placeholder="25.00"
+            defaultValue={producto ? aMontoEditable(producto.precioCentavos) : ""}
+            required
+          />
+        )}
       </div>
 
       <AreaTexto
@@ -84,6 +91,21 @@ export function ProductoForm({ categorias, producto, accion, textoBoton }: Props
       )}
 
       <CamposDelTipo valores={producto} />
+
+      <section className="flex flex-col gap-5 rounded-card border border-borde bg-white p-4">
+        <h2 className="font-bold">Opciones para el cliente</h2>
+        <Selector
+          label="¿Cuántos colores puede elegir?"
+          name="max_colores"
+          defaultValue={producto?.maxColores ?? 0}
+          opciones={Array.from({ length: MAX_COLORES_PRODUCTO + 1 }, (_, n) => ({
+            valor: n,
+            etiqueta: n === 0 ? "No elige colores" : `Hasta ${n} ${n === 1 ? "color" : "colores"} de tu paleta`,
+          }))}
+        />
+        <EditorOpciones tipo="tamanos" iniciales={producto?.tamanos ?? []} onCambio={(n) => setHayTamanos(n > 0)} />
+        <EditorOpciones tipo="extras" iniciales={producto?.extras ?? []} />
+      </section>
 
       {estado.error && (
         <p role="alert" className="text-sm text-sandia">

@@ -1,4 +1,13 @@
-import { aCamposTipo, COLUMNAS_TIPO, urlsOrdenadas } from "@/features/catalogo/infrastructure/mapeos";
+import {
+  aCamposTipo,
+  aExtras,
+  aTamanos,
+  COLUMNAS_TIPO,
+  SELECT_OPCIONES,
+  urlsOrdenadas,
+  type FilaExtra,
+  type FilaTamano,
+} from "@/features/catalogo/infrastructure/mapeos";
 import type { Database } from "@/shared/supabase/database.types";
 import type { ClienteSupabase } from "@/shared/supabase/tipos";
 import type {
@@ -24,9 +33,10 @@ type FilaTarjetaProducto = Pick<
   | "stock_por_fecha"
   | "cupo_diario"
   | "anticipacion_horas"
-  | "permite_colores"
   | "permite_texto"
   | "permite_referencia"
+  | "max_colores"
+  | "tiene_tamanos"
 > & {
   producto_fotos: Pick<Tablas["producto_fotos"]["Row"], "url" | "orden">[];
   emprendimientos: FilaEmprendimientoBreve;
@@ -36,7 +46,7 @@ const COLUMNAS_EMPRENDIMIENTO_BREVE = "id, nombre, logo_url, rating_promedio, to
 
 // "as const" mantiene el texto exacto para que Supabase infiera los tipos.
 // !inner + filtro aprobado: nunca se muestran productos de emprendimientos sin aprobar
-const SELECT_TARJETA_PRODUCTO = `id, nombre, tipo, precio_centavos, ${COLUMNAS_TIPO}, producto_fotos(url, orden), emprendimientos!inner(${COLUMNAS_EMPRENDIMIENTO_BREVE}, aprobado)` as const;
+const SELECT_TARJETA_PRODUCTO = `id, nombre, tipo, precio_centavos, max_colores, tiene_tamanos, ${COLUMNAS_TIPO}, producto_fotos(url, orden), emprendimientos!inner(${COLUMNAS_EMPRENDIMIENTO_BREVE}, aprobado)` as const;
 
 function aEmprendimientoBreve(fila: FilaEmprendimientoBreve): EmprendimientoBreve {
   return {
@@ -56,6 +66,8 @@ function aTarjetaProducto(fila: FilaTarjetaProducto): TarjetaProducto {
     precioCentavos: fila.precio_centavos,
     ...aCamposTipo(fila),
     portadaUrl: urlsOrdenadas(fila.producto_fotos)[0] ?? null,
+    tieneTamanos: fila.tiene_tamanos,
+    maxColores: fila.max_colores,
     emprendimiento: aEmprendimientoBreve(fila.emprendimientos),
   };
 }
@@ -134,7 +146,7 @@ export function crearRepositorioExplorar(supabase: ClienteSupabase): ExplorarRep
     async obtenerProducto(id) {
       const { data, error } = await supabase
         .from("productos")
-        .select(`${SELECT_TARJETA_PRODUCTO}, descripcion, categorias(nombre)` as const)
+        .select(`${SELECT_TARJETA_PRODUCTO}, descripcion, categorias(nombre), ${SELECT_OPCIONES}` as const)
         .eq("id", id)
         .eq("activo", true)
         .eq("emprendimientos.aprobado", true)
@@ -148,6 +160,8 @@ export function crearRepositorioExplorar(supabase: ClienteSupabase): ExplorarRep
         descripcion: data.descripcion,
         categoria: data.categorias.nombre,
         fotos: urlsOrdenadas(data.producto_fotos),
+        tamanos: aTamanos(data.producto_tamanos as FilaTamano[]),
+        extras: aExtras(data.producto_extras as FilaExtra[]),
       };
     },
 

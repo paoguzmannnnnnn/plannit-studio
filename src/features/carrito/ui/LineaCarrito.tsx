@@ -2,7 +2,12 @@ import Image from "next/image";
 import { formatearDolares } from "@/shared/dinero";
 import { BotonFormulario } from "@/shared/ui/BotonFormulario";
 import { cambiarCantidad, quitarDelCarrito } from "../application/actions";
-import { describirPersonalizacion, type EstadoLinea, type LineaCarrito as Linea } from "../domain/carrito";
+import {
+  describirOpciones,
+  describirPersonalizacion,
+  type EstadoLinea,
+  type LineaCarrito as Linea,
+} from "../domain/carrito";
 
 const AVISOS: Record<Exclude<EstadoLinea, "ok">, (linea: Linea) => string> = {
   no_disponible: () => "Ya no llega a tiempo para tu fecha. Quítalo para poder confirmar.",
@@ -13,7 +18,7 @@ const claseStepper =
   "flex size-8 items-center justify-center rounded-full border border-borde bg-white transition hover:border-sandia disabled:opacity-40";
 
 export function LineaCarrito({ linea, eventoId }: { linea: Linea; eventoId: string }) {
-  const detalles = describirPersonalizacion(linea.personalizacion);
+  const detalles = [...describirOpciones(linea), ...describirPersonalizacion(linea.personalizacion)];
   const puedeSubir = linea.estado === "ok" && linea.cantidad < linea.disponibles;
 
   return (
