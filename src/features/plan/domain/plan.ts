@@ -2,11 +2,11 @@ import type { ItemCarrito } from "@/features/carrito/domain/carrito";
 import type { EstadoPedido } from "@/features/pedidos/domain/estados";
 import { estadoVisible, type Pedido } from "@/features/pedidos/domain/pedido";
 import { horasHasta } from "@/shared/fechas";
-import { perteneceA, plantillaDe, SECCIONES, type IdSeccion } from "./secciones";
+import { perteneceA, SECCIONES, type IdSeccion } from "./secciones";
 
 // ---------------------------------------------------------------------
 // El plan del evento: lógica pura. Junta pedidos y carrito, los acomoda
-// en los pasos del tipo de evento (en orden), calcula el progreso y,
+// en los pasos que eligió el cliente (en orden), calcula el progreso y,
 // para lo que falta, hasta cuándo se puede elegir (según la anticipación real
 // de los productos que hay para esa fecha y zona).
 // ---------------------------------------------------------------------
@@ -36,14 +36,12 @@ export type SeccionDelPlan = {
   nombre: string;
   detalle: string;
   elementos: ElementoPlan[];
-  /** El cliente lo resuelve por su cuenta ("Ya lo tengo"): cuenta como listo */
-  cubierta: boolean;
   limite: Limite;
 };
 
 export type Plan = {
   secciones: SeccionDelPlan[];
-  /** Lo elegido que no cae en ningún paso de este tipo de evento */
+  /** Lo elegido que no cae en ninguno de los pasos del evento */
   extras: ElementoPlan[];
   listas: number;
   total: number;
@@ -65,9 +63,9 @@ export type InfoProducto = { categoria: string; anticipacionHoras: number };
 
 export type EntradaPlan = {
   eventoId: string;
-  tipoEvento: string;
+  /** Pasos que eligió el cliente, ya en orden */
+  pasos: readonly IdSeccion[];
   fechaEntrega: string;
-  cubiertas: readonly string[];
   pedidos: readonly Pick<Pedido, "id" | "ordenId" | "estado" | "expiraAt">[];
   itemsPedido: readonly ItemDePedido[];
   itemsCarrito: readonly ItemCarrito[];
@@ -153,8 +151,7 @@ function tieneFecha(limite: Limite): limite is LimiteConFecha {
 }
 
 export function armarPlan(entrada: EntradaPlan): Plan {
-  const plantilla = plantillaDe(entrada.tipoEvento);
-  const cubiertas = new Set(entrada.cubiertas);
+  const plantilla = entrada.pasos;
   const elementos = [...elementosDePedidos(entrada), ...elementosDelCarrito(entrada)];
   const categoriaDe = (elemento: ElementoPlan) => entrada.info.get(elemento.productoId)?.categoria;
 
@@ -163,7 +160,6 @@ export function armarPlan(entrada: EntradaPlan): Plan {
     nombre: SECCIONES[id].nombre,
     detalle: SECCIONES[id].detalle,
     elementos: elementos.filter((elemento) => perteneceA(id, categoriaDe(elemento))),
-    cubierta: cubiertas.has(id),
     limite: limiteDe(id, entrada),
   }));
 
@@ -171,7 +167,7 @@ export function armarPlan(entrada: EntradaPlan): Plan {
     (elemento) => !plantilla.some((id) => perteneceA(id, categoriaDe(elemento))),
   );
 
-  const pendientes = secciones.filter((seccion) => !seccion.cubierta && seccion.elementos.length === 0);
+  const pendientes = secciones.filter((seccion) => seccion.elementos.length === 0);
   const listas = secciones.length - pendientes.length;
 
   const conFecha = pendientes.flatMap((seccion) =>

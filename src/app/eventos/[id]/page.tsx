@@ -10,6 +10,8 @@ import { etapaDe } from "@/features/pedidos/domain/pedido";
 import { crearRepositorioPedidos } from "@/features/pedidos/infrastructure/pedidoRepository";
 import { AvisoPedido } from "@/features/pedidos/ui/AvisoPedido";
 import { cargarPlan } from "@/features/plan/application/cargarPlan";
+import { resumirPresupuesto } from "@/features/plan/domain/presupuesto";
+import { BarraPresupuesto } from "@/features/plan/ui/BarraPresupuesto";
 import { PlanEvento } from "@/features/plan/ui/PlanEvento";
 import { horasHasta } from "@/shared/fechas";
 import { createClient } from "@/shared/supabase/server";
@@ -38,6 +40,14 @@ export default async function EventoPage({ params }: Props) {
   ]);
 
   const plan = await cargarPlan({ supabase, evento, pedidos, itemsCarrito, yaPaso });
+  const subtotalSinApartar = subtotalDeItems(itemsCarrito);
+  const presupuesto = evento.presupuestoCentavos
+    ? resumirPresupuesto({
+        presupuestoCentavos: evento.presupuestoCentavos,
+        pedidos,
+        sinApartarCentavos: subtotalSinApartar,
+      })
+    : null;
   const pendientes = pedidos.filter((pedido) => etapaDe(pedido, "cliente", transiciones) === "por_atender");
 
   return (
@@ -64,12 +74,9 @@ export default async function EventoPage({ params }: Props) {
 
       {yaPaso && <p className="rounded-card bg-rosa p-4 text-sm">Este evento ya pasó. Así quedó tu plan:</p>}
 
-      <PlanEvento
-        plan={plan}
-        eventoId={evento.id}
-        editable={!yaPaso}
-        subtotalSinApartar={subtotalDeItems(itemsCarrito)}
-      />
+      <BarraPresupuesto resumen={presupuesto} hrefEditar={yaPaso ? null : `/eventos/${evento.id}/editar#presupuesto`} />
+
+      <PlanEvento plan={plan} eventoId={evento.id} editable={!yaPaso} subtotalSinApartar={subtotalSinApartar} />
 
       {pedidos.length > 0 && (
         <Link href="/pedidos" className="self-center text-sm font-bold text-sandia">

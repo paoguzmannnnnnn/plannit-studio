@@ -4,6 +4,7 @@ import type { Evento } from "@/features/eventos/domain/evento";
 import type { Pedido } from "@/features/pedidos/domain/pedido";
 import type { ClienteSupabase } from "@/shared/supabase/tipos";
 import { armarPlan, type Plan } from "../domain/plan";
+import { pasosDe } from "../domain/secciones";
 import { crearRepositorioPlan } from "../infrastructure/planRepository";
 
 type Entrada = {
@@ -31,9 +32,8 @@ export async function cargarPlan({ supabase, evento, pedidos, itemsCarrito, yaPa
 
   return armarPlan({
     eventoId: evento.id,
-    tipoEvento: evento.tipo,
+    pasos: pasosDe(evento),
     fechaEntrega: evento.fechaEntrega,
-    cubiertas: evento.seccionesCubiertas,
     pedidos,
     itemsPedido,
     itemsCarrito,

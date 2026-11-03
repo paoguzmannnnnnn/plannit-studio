@@ -22,8 +22,9 @@ export type Evento = {
   fechaEntrega: string; // timestamptz: fecha + hora en que la decoración debe estar lista
   zona: { id: number; nombre: string };
   direccion: string;
-  /** Pasos del plan que el cliente ya tiene resueltos por su cuenta ("Ya lo tengo") */
-  seccionesCubiertas: string[];
+  /** Pasos del plan que eligió el cliente (ids de secciones) */
+  pasos: string[];
+  presupuestoCentavos: number | null;
 };
 
 // Lo que se guarda al crear o editar un evento
@@ -33,6 +34,8 @@ export type DatosEvento = {
   fechaEntrega: string;
   zonaId: number;
   direccion: string;
+  pasos: string[];
+  presupuestoCentavos: number | null;
 };
 
 // Lo que devuelve la función productos_disponibles para un evento

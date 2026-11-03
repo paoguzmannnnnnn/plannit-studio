@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { esFechaISO, horasHasta, momentoLocal } from "@/shared/fechas";
-import { entero } from "@/shared/validaciones";
+import { normalizarPasos } from "@/features/plan/domain/secciones";
+import { entero, montoEnCentavos } from "@/shared/validaciones";
 import { TIPOS_EVENTO } from "./evento";
 
 export const MESES_MAXIMOS_HACIA_ADELANTE = 12;
@@ -35,3 +36,18 @@ export const fechaYZonaSchema = z
   .refine((datos) => horasHasta(datos.fechaEntrega) <= HORAS_MAXIMAS, {
     message: `Por ahora puedes planear hasta ${MESES_MAXIMOS_HACIA_ADELANTE} meses adelante`,
   });
+
+// Qué incluye el plan y cuánto se quiere gastar (el presupuesto es opcional)
+export const planEventoSchema = z.object({
+  pasos: z
+    .array(z.string())
+    .transform((valores) => normalizarPasos(valores))
+    .refine((pasos) => pasos.length > 0, "Elige al menos una cosa para tu plan"),
+  presupuestoCentavos: z.union([
+    z.literal("").transform(() => null),
+    montoEnCentavos("Escribe el presupuesto como 500 o 500.50").refine(
+      (centavos) => centavos >= 100 && centavos <= 100_000_000,
+      "El presupuesto va de $1 a $1,000,000",
+    ),
+  ]),
+});

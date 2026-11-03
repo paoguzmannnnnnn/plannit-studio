@@ -1,9 +1,7 @@
 import { Check } from "lucide-react";
 import Link from "next/link";
 import { formatearDolares } from "@/shared/dinero";
-import { BotonFormulario } from "@/shared/ui/BotonFormulario";
 import { Etiqueta } from "@/shared/ui/Etiqueta";
-import { marcarCubierta } from "../application/actions";
 import { esUrgente, type ElementoPlan, type Plan, type SeccionDelPlan } from "../domain/plan";
 import { ProgresoPlan } from "./ProgresoPlan";
 import { textoLimite } from "./textos";
@@ -48,8 +46,7 @@ function Numero({ paso, listo }: { paso: number; listo: boolean }) {
 }
 
 function Paso({ seccion, paso, eventoId, editable }: { seccion: SeccionDelPlan; paso: number; eventoId: string; editable: boolean }) {
-  const elegido = seccion.elementos.length > 0;
-  const listo = elegido || seccion.cubierta;
+  const listo = seccion.elementos.length > 0;
   const hrefElegir = `/eventos/${eventoId}/agregar?seccion=${seccion.id}`;
   const { limite } = seccion;
   const urgente = (limite.tipo === "todas" || limite.tipo === "ultima") && esUrgente(limite);
@@ -72,28 +69,12 @@ function Paso({ seccion, paso, eventoId, editable }: { seccion: SeccionDelPlan; 
         )}
       </div>
 
-      {elegido && <Galeria elementos={seccion.elementos} hrefAgregar={editable ? hrefElegir : null} />}
-
-      {!elegido && seccion.cubierta && (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-fondo px-3 py-2 text-xs">
-          <span className="font-medium">Ya lo tienes cubierto</span>
-          {editable && (
-            <form action={marcarCubierta.bind(null, eventoId, seccion.id, false)}>
-              <BotonFormulario className="font-bold text-sandia">Mejor lo elijo aquí</BotonFormulario>
-            </form>
-          )}
-        </div>
-      )}
+      {listo && <Galeria elementos={seccion.elementos} hrefAgregar={editable ? hrefElegir : null} />}
 
       {!listo && editable && (
-        <div className="flex items-center justify-between gap-3 border-t border-borde pt-2">
-          <p className={`text-xs ${urgente ? "font-bold text-sandia" : "text-gris"}`}>{textoLimite(limite)}</p>
-          <form action={marcarCubierta.bind(null, eventoId, seccion.id, true)}>
-            <BotonFormulario className="shrink-0 rounded-full border border-borde px-3 py-1 text-xs transition hover:border-sandia">
-              Ya lo tengo
-            </BotonFormulario>
-          </form>
-        </div>
+        <p className={`border-t border-borde pt-2 text-xs ${urgente ? "font-bold text-sandia" : "text-gris"}`}>
+          {textoLimite(limite)}
+        </p>
       )}
     </li>
   );
@@ -107,7 +88,14 @@ export function PlanEvento({ plan, eventoId, editable, subtotalSinApartar }: Pro
       <ProgresoPlan plan={plan} editable={editable} />
 
       <section className="flex flex-col gap-3">
-        <h2 className="font-display text-2xl font-black">Tu plan, paso a paso</h2>
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-display text-2xl font-black">Tu plan, paso a paso</h2>
+          {editable && (
+            <Link href={`/eventos/${eventoId}/editar#pasos`} className="shrink-0 text-sm font-bold text-sandia">
+              Editar pasos
+            </Link>
+          )}
+        </div>
         <ol className="flex flex-col gap-3">
           {plan.secciones.map((seccion, indice) => (
             <Paso key={seccion.id} seccion={seccion} paso={indice + 1} eventoId={eventoId} editable={editable} />

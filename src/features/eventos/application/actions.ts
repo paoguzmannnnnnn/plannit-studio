@@ -9,7 +9,7 @@ import { horasHasta } from "@/shared/fechas";
 import { mensajeDeNegocio } from "@/shared/supabase/errores";
 import { createClient } from "@/shared/supabase/server";
 import { fechaYZonaBloqueadas } from "../domain/edicion";
-import { datosBasicosEventoSchema, fechaYZonaSchema } from "../domain/schemas";
+import { datosBasicosEventoSchema, fechaYZonaSchema, planEventoSchema } from "../domain/schemas";
 import { crearRepositorioEventos } from "../infrastructure/eventoRepository";
 
 function leerBasicos(formData: FormData) {
@@ -28,6 +28,14 @@ function leerFechaYZona(formData: FormData) {
   });
 }
 
+function leerPlan(formData: FormData) {
+  return planEventoSchema.safeParse({
+    pasos: formData.getAll("paso"),
+    // Se aceptan "$1,200" o "1200"
+    presupuestoCentavos: texto(formData, "presupuesto").replace(/[$,\s]/g, ""),
+  });
+}
+
 export async function crearEvento(_estado: EstadoAccion, formData: FormData): Promise<EstadoAccion> {
   const usuario = await obtenerUsuarioActual();
   if (usuario?.rol !== "cliente") return { error: "Inicia sesión como cliente para crear un evento" };
@@ -36,20 +44,23 @@ export async function crearEvento(_estado: EstadoAccion, formData: FormData): Pr
   if (!basicos.success) return primerError(basicos.error.issues);
   const fechaYZona = leerFechaYZona(formData);
   if (!fechaYZona.success) return primerError(fechaYZona.error.issues);
+  const plan = leerPlan(formData);
+  if (!plan.success) return primerError(plan.error.issues);
 
   let eventoId: string;
   try {
     eventoId = await crearRepositorioEventos(await createClient()).crear(usuario.id, {
       ...basicos.data,
       ...fechaYZona.data,
+      ...plan.data,
     });
   } catch (error) {
     console.error("[eventos:crear]", error);
     return { error: "No pudimos crear tu evento. Intenta de nuevo." };
   }
 
-  // Un evento recién creado no tiene nada: lo llevamos directo a elegir decoración
-  redirect(`/eventos/${eventoId}/agregar`);
+  // Lo llevamos a su plan: ahí ve los pasos que eligió y empieza por el primero
+  redirect(`/eventos/${eventoId}`);
 }
 
 export async function actualizarEvento(
@@ -68,6 +79,8 @@ export async function actualizarEvento(
 
   const basicos = leerBasicos(formData);
   if (!basicos.success) return primerError(basicos.error.issues);
+  const plan = leerPlan(formData);
+  if (!plan.success) return primerError(plan.error.issues);
 
   // Con pedidos vivos se conservan la fecha y la zona que ya tenía
   const pedidos = await crearRepositorioPedidos(supabase).listarDeEvento(evento.id);
@@ -79,7 +92,7 @@ export async function actualizarEvento(
   }
 
   try {
-    await eventos.actualizar(evento.id, { ...basicos.data, ...fechaYZona });
+    await eventos.actualizar(evento.id, { ...basicos.data, ...fechaYZona, ...plan.data });
   } catch (error) {
     console.error("[eventos:actualizar]", error);
     return { error: mensajeDeNegocio(error) ?? "No pudimos guardar los cambios. Intenta de nuevo." };

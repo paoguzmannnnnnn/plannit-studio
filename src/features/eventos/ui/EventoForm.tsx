@@ -1,12 +1,14 @@
 "use client";
 
-import { startTransition, useActionState, type FormEvent } from "react";
+import { startTransition, useActionState, useState, type FormEvent } from "react";
+import { normalizarPasos, pasosSugeridos, type IdSeccion } from "@/features/plan/domain/secciones";
 import { ESTADO_INICIAL, type EstadoAccion } from "@/shared/acciones";
 import type { Zona } from "@/shared/catalogos";
 import { Button } from "@/shared/ui/Button";
 import { Campo } from "@/shared/ui/Campo";
 import { Selector } from "@/shared/ui/Selector";
 import { TIPOS_EVENTO } from "../domain/evento";
+import { SelectorPasos } from "./SelectorPasos";
 
 export type ValoresEvento = {
   nombre: string;
@@ -15,6 +17,9 @@ export type ValoresEvento = {
   hora: string;
   zonaId: number;
   direccion: string;
+  pasos: readonly string[];
+  /** Como se escribe en el campo ("500" o "") */
+  presupuesto: string;
 };
 
 type Props = {
@@ -32,6 +37,20 @@ type Props = {
 // Mismo formulario para crear y para editar el evento
 export function EventoForm({ zonas, fechaMinima, fechaMaxima, accion, textoBoton, valores, fechaBloqueada }: Props) {
   const [estado, ejecutar, pendiente] = useActionState(accion, ESTADO_INICIAL);
+  const [tipo, setTipo] = useState(valores?.tipo ?? "");
+  const [pasos, setPasos] = useState<ReadonlySet<IdSeccion>>(() => new Set(normalizarPasos(valores?.pasos ?? [])));
+  // Mientras el cliente no toque los pasos, se ajustan solos al tipo de evento
+  const [tocado, setTocado] = useState(Boolean(valores));
+
+  function cambiarTipo(nuevo: string) {
+    setTipo(nuevo);
+    if (!tocado) setPasos(new Set(pasosSugeridos(nuevo)));
+  }
+
+  function cambiarPasos(siguientes: Set<IdSeccion>) {
+    setTocado(true);
+    setPasos(siguientes);
+  }
 
   // Enviamos a mano para que el formulario NO se limpie si hay un error
   function enviar(evento: FormEvent<HTMLFormElement>) {
@@ -55,9 +74,22 @@ export function EventoForm({ zonas, fechaMinima, fechaMaxima, accion, textoBoton
         label="Tipo de evento"
         name="tipo"
         placeholder="Elige uno"
-        defaultValue={valores?.tipo ?? ""}
-        opciones={TIPOS_EVENTO.map((tipo) => ({ valor: tipo, etiqueta: tipo }))}
+        value={tipo}
+        onChange={(e) => cambiarTipo(e.target.value)}
+        opciones={TIPOS_EVENTO.map((opcion) => ({ valor: opcion, etiqueta: opcion }))}
         required
+      />
+
+      <SelectorPasos
+        elegidos={pasos}
+        onCambio={cambiarPasos}
+        ayuda={
+          valores
+            ? "Si quitas un paso, lo que ya elegiste ahí se queda en Extras."
+            : tipo
+              ? "Te marcamos lo típico para este evento. Quita o agrega lo que quieras."
+              : "Elige el tipo de evento y te sugerimos lo típico."
+        }
       />
 
       {fechaBloqueada ? (
@@ -108,6 +140,18 @@ export function EventoForm({ zonas, fechaMinima, fechaMaxima, accion, textoBoton
         defaultValue={valores?.direccion}
         required
       />
+
+      <div id="presupuesto" className="flex scroll-mt-24 flex-col gap-2">
+        <Campo
+          label="Presupuesto (opcional)"
+          name="presupuesto"
+          inputMode="decimal"
+          placeholder="500"
+          defaultValue={valores?.presupuesto}
+          maxLength={12}
+        />
+        <p className="text-xs text-gris">Lo que quieres gastar en decoración. Te avisamos cuánto te queda.</p>
+      </div>
 
       {estado.error && (
         <p role="alert" className="text-sm text-sandia">

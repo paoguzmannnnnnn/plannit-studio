@@ -6,9 +6,11 @@ import { fechaYZonaBloqueadas } from "@/features/eventos/domain/edicion";
 import { MESES_MAXIMOS_HACIA_ADELANTE } from "@/features/eventos/domain/schemas";
 import { crearRepositorioEventos } from "@/features/eventos/infrastructure/eventoRepository";
 import { EventoForm } from "@/features/eventos/ui/EventoForm";
+import { pasosDe } from "@/features/plan/domain/secciones";
 import { crearRepositorioPedidos } from "@/features/pedidos/infrastructure/pedidoRepository";
 import { listarZonas } from "@/shared/catalogos";
 import { formatearMomento, horasHasta, hoyLocal, partesLocales, sumarDias } from "@/shared/fechas";
+import { aMontoEditable } from "@/shared/dinero";
 import { createClient } from "@/shared/supabase/server";
 import { esUuid } from "@/shared/validaciones";
 
@@ -63,6 +65,8 @@ export default async function EditarEventoPage({ params }: Props) {
           hora,
           zonaId: evento.zona.id,
           direccion: evento.direccion,
+          pasos: pasosDe(evento),
+          presupuesto: evento.presupuestoCentavos ? aMontoEditable(evento.presupuestoCentavos) : "",
         }}
         fechaBloqueada={
           bloqueada ? `${formatearMomento(evento.fechaEntrega)} · ${evento.zona.nombre}` : undefined

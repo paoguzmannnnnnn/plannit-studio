@@ -6,11 +6,11 @@ type Tablas = Database["public"]["Tables"];
 
 type FilaEvento = Pick<
   Tablas["eventos"]["Row"],
-  "id" | "cliente_id" | "nombre" | "tipo" | "fecha_entrega" | "direccion" | "secciones_omitidas"
+  "id" | "cliente_id" | "nombre" | "tipo" | "fecha_entrega" | "direccion" | "pasos" | "presupuesto_centavos"
 > & { zonas: Pick<Tablas["zonas"]["Row"], "id" | "nombre"> };
 
 const SELECT_EVENTO =
-  "id, cliente_id, nombre, tipo, fecha_entrega, direccion, secciones_omitidas, zonas(id, nombre)";
+  "id, cliente_id, nombre, tipo, fecha_entrega, direccion, pasos, presupuesto_centavos, zonas(id, nombre)";
 
 function aEvento(fila: FilaEvento): Evento {
   return {
@@ -21,8 +21,8 @@ function aEvento(fila: FilaEvento): Evento {
     fechaEntrega: fila.fecha_entrega,
     direccion: fila.direccion,
     zona: fila.zonas,
-    // La columna conserva su nombre original: guarda los pasos marcados como "Ya lo tengo"
-    seccionesCubiertas: fila.secciones_omitidas,
+    pasos: fila.pasos,
+    presupuestoCentavos: fila.presupuesto_centavos,
   };
 }
 
@@ -33,6 +33,8 @@ function aColumnas(datos: DatosEvento) {
     fecha_entrega: datos.fechaEntrega,
     zona_id: datos.zonaId,
     direccion: datos.direccion,
+    pasos: datos.pasos,
+    presupuesto_centavos: datos.presupuestoCentavos,
   };
 }
 
