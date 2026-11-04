@@ -91,12 +91,24 @@ export function ListaInvitados({ eventoId, invitados, editable }: Props) {
             )}
           </div>
         )}
+      </section>
 
-        {editable && <FormInvitado accion={agregarInvitado.bind(null, eventoId)} />}
+      {editable && (
+        <section className="flex flex-col gap-3 rounded-card border border-borde bg-white p-4">
+          <h3 className="font-display text-lg font-black">Agregar invitado</h3>
+          <FormInvitado accion={agregarInvitado.bind(null, eventoId)} />
+        </section>
+      )}
+
+      <section className="flex flex-col gap-3 rounded-card border border-borde bg-white p-4">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="font-display text-lg font-black">Lista</h3>
+          {invitados.length > 0 && <span className="text-xs text-gris">Marca quién confirma</span>}
+        </div>
 
         {invitados.length === 0 ? (
-          <p className="text-center text-sm text-gris">
-            {editable ? "Anota a tus invitados y marca quién confirma." : "No anotaste invitados."}
+          <p className="py-4 text-center text-sm text-gris">
+            {editable ? "Todavía no hay nadie. Agrega a tu primer invitado arriba." : "No anotaste invitados."}
           </p>
         ) : (
           <ul className="flex flex-col divide-y divide-borde">
@@ -107,10 +119,7 @@ export function ListaInvitados({ eventoId, invitados, editable }: Props) {
                     <p className={`text-sm font-bold ${invitado.estado === "no_va" ? "text-gris line-through" : ""}`}>
                       {invitado.nombre}
                     </p>
-                    <p className="text-xs text-gris">
-                      {personasTexto(invitado.personas)}
-                      {invitado.nota && ` · ${invitado.nota}`}
-                    </p>
+                    <p className="text-xs text-gris">{personasTexto(invitado.personas)}</p>
                   </div>
                   {editable && (
                     <form action={quitarInvitado.bind(null, eventoId, invitado.id)} className="sm:order-last">

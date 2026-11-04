@@ -6,8 +6,9 @@ export function ProgresoPlan({ plan, editable }: { plan: Plan; editable: boolean
   const completo = plan.total > 0 && plan.pendientes.length === 0;
 
   return (
-    <section className="flex flex-col gap-3 rounded-card border border-borde bg-white p-4">
-      <div className="flex items-baseline justify-between gap-3">
+    <section className="flex flex-col gap-3 rounded-card border border-borde bg-white p-4" aria-label="Tu avance">
+      <h2 className="font-display text-lg font-black">Tu avance</h2>
+      <div className="-mt-2 flex items-baseline justify-between gap-3">
         <p className="font-bold">{completo ? "¡Tu plan está completo!" : `Tu plan va al ${plan.porcentaje}%`}</p>
         <span className="shrink-0 text-xs text-gris">
           {plan.listas} de {plan.total} pasos listos

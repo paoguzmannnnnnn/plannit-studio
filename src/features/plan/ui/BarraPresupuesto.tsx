@@ -12,9 +12,9 @@ export function BarraPresupuesto({ resumen, hrefEditar }: Props) {
         href={hrefEditar}
         className="flex items-center justify-between gap-3 rounded-card border border-dashed border-borde bg-white px-4 py-3 text-sm transition hover:border-sandia"
       >
-        <span>
-          <span className="font-bold">¿Tienes un presupuesto?</span>{" "}
-          <span className="text-gris">Agrégalo y te decimos cuánto te queda.</span>
+        <span className="flex flex-col">
+          <span className="font-display text-lg font-black">Tu presupuesto</span>
+          <span className="text-gris">¿Tienes uno? Agrégalo y te decimos cuánto te queda.</span>
         </span>
         <span className="shrink-0 font-bold text-sandia">Agregar</span>
       </Link>
@@ -25,7 +25,8 @@ export function BarraPresupuesto({ resumen, hrefEditar }: Props) {
 
   return (
     <section className="flex flex-col gap-3 rounded-card border border-borde bg-white p-4" aria-label="Presupuesto">
-      <div className="flex items-baseline justify-between gap-3">
+      <h2 className="font-display text-lg font-black">Tu presupuesto</h2>
+      <div className="-mt-2 flex items-baseline justify-between gap-3">
         <p className="font-bold">
           {excedido
             ? `Te pasaste por ${formatearDolares(-resumen.restanteCentavos)}`

@@ -22,7 +22,7 @@ type Props = { eventoId: string; activa: VistaPlan; avisos?: Partial<Record<Vist
 export function PestanasPlan({ eventoId, activa, avisos = {} }: Props) {
   return (
     <nav
-      className="sticky top-2 z-20 grid grid-cols-3 gap-1 rounded-card border border-borde bg-white p-1.5 shadow-sm"
+      className="sticky top-2 z-20 grid grid-cols-3 gap-1.5 rounded-card border border-borde bg-white p-1.5 shadow-sm"
       aria-label="Apartados del plan"
     >
       {VISTAS_PLAN.map(({ id, etiqueta, detalle, Icono }) => {
@@ -34,8 +34,8 @@ export function PestanasPlan({ eventoId, activa, avisos = {} }: Props) {
             href={id === VISTA_INICIAL ? `/eventos/${eventoId}` : `/eventos/${eventoId}?vista=${id}`}
             scroll={false}
             aria-current={esActiva ? "page" : undefined}
-            className={`relative flex flex-col items-center gap-0.5 rounded-2xl px-1 py-2.5 text-center transition ${
-              esActiva ? "bg-sandia text-white" : "text-tinta hover:bg-rosa"
+            className={`relative flex flex-col items-center gap-0.5 rounded-2xl border-[1.5px] px-1 py-2.5 text-center transition ${
+              esActiva ? "border-sandia bg-sandia text-white" : "border-borde bg-fondo text-tinta hover:border-sandia hover:bg-rosa"
             }`}
           >
             <Icono size={20} strokeWidth={2} aria-hidden className={esActiva ? "" : "text-sandia"} />
