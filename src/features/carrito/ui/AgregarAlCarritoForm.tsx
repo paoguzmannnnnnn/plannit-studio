@@ -134,15 +134,7 @@ export function AgregarAlCarritoForm({ accion, maximo, precioCentavos, tamanos, 
 
       {opciones.colores &&
         (opciones.colores.paleta.length > 0 ? (
-          <>
-            <SelectorColores paleta={opciones.colores.paleta} maximo={opciones.colores.maximo} />
-            <Campo
-              label="¿Otro color? (opcional)"
-              name="colores"
-              placeholder="Si buscas un tono que no está arriba"
-              maxLength={60}
-            />
-          </>
+          <SelectorColores paleta={opciones.colores.paleta} maximo={opciones.colores.maximo} />
         ) : (
           <Campo label="Colores" name="colores" placeholder="Rosa pastel y dorado" maxLength={80} />
         ))}
