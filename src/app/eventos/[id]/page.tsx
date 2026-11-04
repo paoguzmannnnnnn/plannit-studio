@@ -17,6 +17,8 @@ import { PestanasPlan, vistaDe } from "@/features/plan/ui/PestanasPlan";
 import { PlanEvento } from "@/features/plan/ui/PlanEvento";
 import { crearRepositorioAgenda } from "@/features/planificacion/infrastructure/agendaRepository";
 import { PlanificacionEvento } from "@/features/planificacion/ui/PlanificacionEvento";
+import { crearRepositorioInvitados } from "@/features/invitados/infrastructure/invitadoRepository";
+import { ListaInvitados } from "@/features/invitados/ui/ListaInvitados";
 import { horasHasta } from "@/shared/fechas";
 import { createClient } from "@/shared/supabase/server";
 import { esUuid } from "@/shared/validaciones";
@@ -42,11 +44,13 @@ export default async function EventoPage({ params, searchParams }: Props) {
 
   const yaPaso = horasHasta(evento.fechaEntrega) <= 0;
   const pedidosRepo = crearRepositorioPedidos(supabase);
-  const [pedidos, transiciones, itemsCarrito, momentos] = await Promise.all([
+  const [pedidos, transiciones, itemsCarrito, momentos, invitados] = await Promise.all([
     pedidosRepo.listarDeEvento(evento.id),
     pedidosRepo.transiciones(),
     yaPaso ? Promise.resolve<ItemCarrito[]>([]) : crearRepositorioCarrito(supabase).listarItems(evento.id),
     vista === "planificacion" ? crearRepositorioAgenda(supabase).listar(evento.id) : Promise.resolve([]),
+    // Siempre: la pestaña de Invitados muestra cuántos faltan por confirmar
+    crearRepositorioInvitados(supabase).listar(evento.id),
   ]);
 
   // El plan también da el numerito de pasos pendientes en la pestaña de Decoración
@@ -71,7 +75,22 @@ export default async function EventoPage({ params, searchParams }: Props) {
 
       <ResumenEvento evento={evento} />
 
-      {pendientes.length > 0 && (
+      {yaPaso && <p className="rounded-card bg-rosa p-4 text-sm">Este evento ya pasó. Así quedó tu plan:</p>}
+
+      <PestanasPlan
+        eventoId={evento.id}
+        activa={vista}
+        avisos={
+          yaPaso
+            ? {}
+            : {
+                decoracion: plan.pendientes.length + pendientes.length,
+                invitados: invitados.filter((invitado) => invitado.estado === "pendiente").length,
+              }
+        }
+      />
+
+      {vista === "decoracion" && pendientes.length > 0 && (
         <section className="flex flex-col gap-3" aria-label="Necesitan tu atención">
           {pendientes.map((pedido) => (
             <AvisoPedido
@@ -84,16 +103,6 @@ export default async function EventoPage({ params, searchParams }: Props) {
           ))}
         </section>
       )}
-
-      {yaPaso && <p className="rounded-card bg-rosa p-4 text-sm">Este evento ya pasó. Así quedó tu plan:</p>}
-
-      <BarraPresupuesto resumen={presupuesto} hrefEditar={yaPaso ? null : `/eventos/${evento.id}/editar#presupuesto`} />
-
-      <PestanasPlan
-        eventoId={evento.id}
-        activa={vista}
-        avisos={{ decoracion: yaPaso ? 0 : plan.pendientes.length }}
-      />
 
       {vista === "planificacion" && (
         <PlanificacionEvento
@@ -108,6 +117,7 @@ export default async function EventoPage({ params, searchParams }: Props) {
 
       {vista === "decoracion" && (
         <>
+          <BarraPresupuesto resumen={presupuesto} hrefEditar={yaPaso ? null : `/eventos/${evento.id}/editar#presupuesto`} />
           <PlanEvento plan={plan} eventoId={evento.id} editable={!yaPaso} subtotalSinApartar={subtotalSinApartar} />
           {pedidos.length > 0 && (
             <Link href="/pedidos" className="self-center text-sm font-bold text-sandia">
@@ -117,14 +127,7 @@ export default async function EventoPage({ params, searchParams }: Props) {
         </>
       )}
 
-      {vista === "invitados" && (
-        <section className="flex flex-col items-center gap-2 rounded-card border border-dashed border-borde bg-white px-6 py-12 text-center">
-          <p className="font-display text-xl font-black">Tu lista de invitados</p>
-          <p className="max-w-xs text-sm text-gris">
-            Muy pronto podrás anotar a tus invitados y marcar quién confirmó.
-          </p>
-        </section>
-      )}
+      {vista === "invitados" && <ListaInvitados eventoId={evento.id} invitados={invitados} editable={!yaPaso} />}
     </>
   );
 }

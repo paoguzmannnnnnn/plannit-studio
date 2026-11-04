@@ -1,11 +1,12 @@
+import { CalendarClock, Sparkles, Users, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 
 // Los tres apartados del plan del evento
 export const VISTAS_PLAN = [
-  { id: "planificacion", etiqueta: "Planificación" },
-  { id: "decoracion", etiqueta: "Decoración" },
-  { id: "invitados", etiqueta: "Invitados" },
-] as const;
+  { id: "planificacion", etiqueta: "Planificación", detalle: "Agenda y notas", Icono: CalendarClock },
+  { id: "decoracion", etiqueta: "Decoración", detalle: "Lo que eliges", Icono: Sparkles },
+  { id: "invitados", etiqueta: "Invitados", detalle: "Quién confirma", Icono: Users },
+] as const satisfies readonly { id: string; etiqueta: string; detalle: string; Icono: LucideIcon }[];
 
 export type VistaPlan = (typeof VISTAS_PLAN)[number]["id"];
 
@@ -17,26 +18,34 @@ export function vistaDe(valor: unknown): VistaPlan {
 
 type Props = { eventoId: string; activa: VistaPlan; avisos?: Partial<Record<VistaPlan, number>> };
 
+// Va justo debajo del nombre del evento: es la forma de moverse dentro del plan
 export function PestanasPlan({ eventoId, activa, avisos = {} }: Props) {
   return (
-    <nav className="sticky top-0 z-20 -mx-1 flex gap-1 rounded-full border border-borde bg-white p-1 shadow-sm" aria-label="Apartados del plan">
-      {VISTAS_PLAN.map((vista) => {
-        const esActiva = vista.id === activa;
-        const aviso = avisos[vista.id] ?? 0;
+    <nav
+      className="sticky top-2 z-20 grid grid-cols-3 gap-1 rounded-card border border-borde bg-white p-1.5 shadow-sm"
+      aria-label="Apartados del plan"
+    >
+      {VISTAS_PLAN.map(({ id, etiqueta, detalle, Icono }) => {
+        const esActiva = id === activa;
+        const aviso = avisos[id] ?? 0;
         return (
           <Link
-            key={vista.id}
-            href={vista.id === VISTA_INICIAL ? `/eventos/${eventoId}` : `/eventos/${eventoId}?vista=${vista.id}`}
+            key={id}
+            href={id === VISTA_INICIAL ? `/eventos/${eventoId}` : `/eventos/${eventoId}?vista=${id}`}
             scroll={false}
             aria-current={esActiva ? "page" : undefined}
-            className={`flex h-10 flex-1 items-center justify-center gap-1.5 rounded-full text-sm transition ${
-              esActiva ? "bg-sandia font-bold text-white" : "text-gris hover:text-tinta"
+            className={`relative flex flex-col items-center gap-0.5 rounded-2xl px-1 py-2.5 text-center transition ${
+              esActiva ? "bg-sandia text-white" : "text-tinta hover:bg-rosa"
             }`}
           >
-            {vista.etiqueta}
+            <Icono size={20} strokeWidth={2} aria-hidden className={esActiva ? "" : "text-sandia"} />
+            <span className="text-[13px] font-bold leading-tight">{etiqueta}</span>
+            <span className={`hidden text-[11px] sm:block ${esActiva ? "text-white/85" : "text-gris"}`}>{detalle}</span>
             {aviso > 0 && (
               <span
-                className={`rounded-full px-1.5 text-[11px] font-bold ${esActiva ? "bg-white text-sandia" : "bg-rosa text-sandia"}`}
+                className={`absolute right-1.5 top-1.5 flex min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold ${
+                  esActiva ? "bg-white text-sandia" : "bg-sandia text-white"
+                }`}
                 aria-label={`${aviso} pendientes`}
               >
                 {aviso}

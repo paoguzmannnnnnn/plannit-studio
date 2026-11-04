@@ -1,24 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { obtenerUsuarioActual } from "@/features/auth/infrastructure/sesion";
-import { crearRepositorioEventos } from "@/features/eventos/infrastructure/eventoRepository";
+import { cargarEventoEditable } from "@/features/eventos/application/eventoEditable";
 import { primerError, texto, type EstadoAccion } from "@/shared/acciones";
-import { horasHasta } from "@/shared/fechas";
-import { createClient } from "@/shared/supabase/server";
 import { MAX_MOMENTOS, momentoSchema, notasSchema } from "../domain/agenda";
 import { crearRepositorioAgenda } from "../infrastructure/agendaRepository";
 
-// Solo el dueño del evento, y solo mientras el evento no haya pasado
 async function eventoEditable(eventoId: string) {
-  const usuario = await obtenerUsuarioActual();
-  if (usuario?.rol !== "cliente") return null;
-
-  const supabase = await createClient();
-  const evento = await crearRepositorioEventos(supabase).obtener(eventoId);
-  if (!evento || evento.clienteId !== usuario.id || horasHasta(evento.fechaEntrega) <= 0) return null;
-
-  return { evento, agenda: crearRepositorioAgenda(supabase) };
+  const contexto = await cargarEventoEditable(eventoId);
+  return contexto ? { evento: contexto.evento, agenda: crearRepositorioAgenda(contexto.supabase) } : null;
 }
 
 const rutaDe = (eventoId: string) => `/eventos/${eventoId}`;
