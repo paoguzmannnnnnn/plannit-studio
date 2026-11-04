@@ -25,6 +25,7 @@ export type Evento = {
   /** Pasos del plan que eligió el cliente (ids de secciones) */
   pasos: string[];
   presupuestoCentavos: number | null;
+  notas: string | null;
 };
 
 // Lo que se guarda al crear o editar un evento
