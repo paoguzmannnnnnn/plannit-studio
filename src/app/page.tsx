@@ -58,7 +58,7 @@ export default async function Home({ searchParams }: Props) {
       : [];
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-7 px-5 py-6">
+    <div className="mx-auto flex max-w-5xl flex-col gap-4 px-5 py-6">
       <EncabezadoPublico usuario={usuario} />
 
       {usuario?.rol === "cliente" && pendientes.length > 0 && (
@@ -142,7 +142,7 @@ export default async function Home({ searchParams }: Props) {
       ) : (
         <>
         <CarruselProductos
-          titulo="Lo más elegido"
+          titulo="Decoración destacada"
           detalle="Lo que más ponen en sus eventos"
           productos={masElegidos(todos, estadisticas, PRODUCTOS_POR_CARRUSEL)}
           estadisticas={estadisticas}
